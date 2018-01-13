@@ -1,4 +1,5 @@
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.obj.IGuild;
 
 import javax.json.Json;
 import javax.json.JsonReader;
@@ -63,7 +64,30 @@ public class Command
 
     public void execute(MessageReceivedEvent event, List<String> argsList, long u)
     {
-        if (access.hasAccess(AccessLevel.EVERYONE))
+        boolean a = false;
+        JsonObject jsonO;
+        try {
+            JsonReader reader = Json.createReader(new FileReader("../PrivateResources/dm_commands.json"));
+            jsonO = (JsonObject)reader.read();
+            reader.close();
+        }
+        catch(FileNotFoundException e)
+        {
+            System.out.println("Command file not found");
+            return;
+        }
+        JsonArray guilds = jsonO.getJsonArray("users");
+        for (int i = 0; i < guilds.size(); i++)
+        {
+            JsonObject userO = guilds.getJsonObject(i);
+            if (userO.getJsonNumber("id").longValue() == u)
+            {
+                AccessLevel level = new AccessLevel(userO.getJsonNumber("access_level").intValue());
+                a = access.hasAccess(level);
+            }
+        }
+
+        if (a)
         {
             execute.runCommand(event, argsList);
         }
@@ -80,6 +104,7 @@ public class Command
         try {
             JsonReader reader = Json.createReader(new FileReader("../PrivateResources/users.json"));
             jsonO = (JsonObject)reader.read();
+            reader.close();
         }
         catch(FileNotFoundException e)
         {
@@ -115,13 +140,17 @@ public class Command
         }
     }
 
-    public static boolean hasChannelPerms(String comName, long g, long c)
+    public static boolean hasChannelPerms(String comName, IGuild g, long c)
     {
+        if (g == null)
+            return true;
+
         JsonObject jsonO;
         try {
             if (comName == TEST) {
                 JsonReader reader = Json.createReader(new FileReader(TestCommands.PERMS));
                 jsonO = (JsonObject)reader.read();
+                reader.close();
             }
             else
             {
@@ -137,7 +166,7 @@ public class Command
         for (int i = 0; i < guilds.size(); i++)
         {
             JsonObject guildO = guilds.getJsonObject(i);
-            if (guildO.getJsonNumber("id").longValue() == g)
+            if (guildO.getJsonNumber("id").longValue() == g.getLongID())
             {
                 JsonArray channels = guildO.getJsonArray("channels");
                 for (int j = 0; j < channels.size(); j++)

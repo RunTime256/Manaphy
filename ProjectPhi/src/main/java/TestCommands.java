@@ -17,7 +17,7 @@ public class TestCommands
         map.put("test", new Command("test", "Provides a test message", AccessLevel.OWNER, (event, args) ->
         {
             IChannel channel = event.getChannel();
-            if (Command.hasChannelPerms(comName, event.getGuild().getLongID(), channel.getLongID()))
+            if (Command.hasChannelPerms(comName, event.getGuild(), channel.getLongID()))
             {
                 BotUtils.sendMessage(channel, "Test complete!");
             }
@@ -26,10 +26,17 @@ public class TestCommands
         map.put("dm", new Command("dm", "DMs a test message", AccessLevel.OWNER, (event, args) ->
         {
             IChannel channel = event.getChannel();
-            if (Command.hasChannelPerms(comName, event.getGuild().getLongID(), channel.getLongID()))
+            if (Command.hasChannelPerms(comName, event.getGuild(), channel.getLongID()))
             {
-                IUser owner = event.getGuild().getOwner();
-                IChannel dm = MainRunner.getClient().getOrCreatePMChannel(owner);
+                IChannel dm;
+                if (event.getGuild() != null)
+                {
+                    dm = MainRunner.getClient().getOrCreatePMChannel(event.getGuild().getOwner());
+                }
+                else
+                {
+                    dm = channel;
+                }
                 BotUtils.sendMessage(dm, "Test complete!");
             }
         }));
