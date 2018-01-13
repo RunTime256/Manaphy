@@ -29,6 +29,7 @@ public class TestCommands
             if (Command.hasChannelPerms(comName, event.getGuild(), channel.getLongID()))
             {
                 IChannel dm;
+                //If the command was not sent in a dm, dm the user that sent the command
                 if (event.getGuild() != null)
                 {
                     dm = MainRunner.getClient().getOrCreatePMChannel(event.getGuild().getOwner());

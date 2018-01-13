@@ -62,10 +62,12 @@ public class Command
         return access.hasAccess(request);
     }
 
+    //Executes the command from a dm
     public void execute(MessageReceivedEvent event, List<String> argsList, long u)
     {
         boolean a = false;
         JsonObject jsonO;
+        //Checks the user's permissions from the json
         try {
             JsonReader reader = Json.createReader(new FileReader("../PrivateResources/dm_commands.json"));
             jsonO = (JsonObject)reader.read();
@@ -87,6 +89,7 @@ public class Command
             }
         }
 
+        //Executes the command if the user has permission
         if (a)
         {
             execute.runCommand(event, argsList);
@@ -97,10 +100,12 @@ public class Command
         }
     }
 
+    //Executes the command from a guild
     public void execute(MessageReceivedEvent event, List<String> argsList, long u, long g)
     {
         boolean a = false;
         JsonObject jsonO;
+        //Checks the user's guild permissions from the json
         try {
             JsonReader reader = Json.createReader(new FileReader("../PrivateResources/users.json"));
             jsonO = (JsonObject)reader.read();
@@ -130,6 +135,7 @@ public class Command
             }
         }
 
+        //Executes the command if the user has permission
         if (a)
         {
             execute.runCommand(event, argsList);
@@ -140,10 +146,13 @@ public class Command
         }
     }
 
+    //Checks if the bot has permission to use the command in the current channel
     public static boolean hasChannelPerms(String comName, IGuild g, long c)
     {
+        //If it's in a dm, it has permission
         if (g == null)
             return true;
+
 
         JsonObject jsonO;
         try {

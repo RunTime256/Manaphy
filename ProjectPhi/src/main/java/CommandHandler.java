@@ -32,6 +32,7 @@ public class CommandHandler
         test.addCommands(commands);
     }
 
+    //Updates playing text when starting up
     @EventSubscriber
     public void handle(ReadyEvent event)
     {
@@ -43,6 +44,7 @@ public class CommandHandler
     @EventSubscriber
     public void OnGuildCreate(GuildCreateEvent event)
     {
+        //Reads the guilds and adds them to a JsonObject
         IUser owner = event.getGuild().getOwner();
         JsonObject jsonO;
         try {
@@ -57,18 +59,24 @@ public class CommandHandler
         JsonArray guilds = jsonO.getJsonArray("guilds");
         JsonObjectBuilder build = Json.createObjectBuilder();
         JsonArrayBuilder arr = Json.createArrayBuilder();
+
+        //Goes through each channel id to see if it has joined a new guild
+        //(Required due to event firing when connecting to a guild as well)
         for (int i = 0; i < guilds.size(); i++)
         {
             JsonObject guildO = guilds.getJsonObject(i);
+            //Since JsonObjects cannot be changed, a new one must be constructed to write to the file. This prepares Objects as they are read
             arr.add(Json.createObjectBuilder().add("id", guildO.getJsonNumber("id").longValue()));
             if (guildO.getJsonNumber("id").longValue() == event.getGuild().getLongID())
             {
                 return;
             }
         }
+        //Add the new guild because it was not in the json file
         arr.add(Json.createObjectBuilder().add("id", event.getGuild().getLongID()));
         build.add("guilds", arr);
         JsonObject w = build.build();
+        //Overwrites the original json to add new guild
         try {
             JsonWriter writer = Json.createWriter(new FileWriter("../PrivateResources/guilds.json"));
             writer.writeObject(w);
@@ -88,6 +96,7 @@ public class CommandHandler
         BotUtils.sendMessage(dm, "test");
     }
 
+    //Performs a command if the message received triggers one
     @EventSubscriber
     public void OnMessageReceived(MessageReceivedEvent event)
     {
@@ -95,13 +104,13 @@ public class CommandHandler
         String lMessage = message.toLowerCase();
         String[] args = lMessage.split(" ");
         int numArgs = args.length - 1;
-        IChannel channel = event.getChannel();
 
         if (numArgs == -1)
         {
             return;
         }
 
+        //Checks to see if there is a passive command to run
         if (!args[0].startsWith(BotUtils.BOT_PREFIX))
         {
             //Run passive commands
@@ -113,6 +122,7 @@ public class CommandHandler
         List<String> argsList = new ArrayList<String>(Arrays.asList(args));
         argsList.remove(0);
 
+        //Checks to see if there is a command with the given key
         if (commands.containsKey(comStr))
         {
             //DM
