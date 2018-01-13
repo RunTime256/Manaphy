@@ -48,8 +48,14 @@ public class MainRunner
         // Only login after all events are registered otherwise some may be missed.
         cli.login();
     }
+
     public static void clientLogout()
     {
         cli.logout();
+    }
+
+    public static IDiscordClient getClient()
+    {
+        return cli;
     }
 }

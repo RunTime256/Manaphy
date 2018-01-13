@@ -1,6 +1,9 @@
 import sx.blah.discord.api.events.EventSubscriber;
+import sx.blah.discord.handle.impl.events.ReadyEvent;
+import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.IChannel;
+import sx.blah.discord.handle.obj.IUser;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -24,14 +27,20 @@ public class CommandHandler
         test.addCommands(commands);
     }
 
-    /*
     @EventSubscriber
     public void handle(ReadyEvent event)
     {
-        event.getClient().changeUsername("Project Phi");
+        //event.getClient().changeUsername("Project Phi");
         event.getClient().changePlayingText("with my sourcecode");
     }
-    */
+    /*
+    @EventSubscriber
+    public void OnGuildCreate(GuildCreateEvent event)
+    {
+        IUser owner = event.getGuild().getOwner();
+        IChannel dm = MainRunner.getClient().getOrCreatePMChannel(owner);
+        BotUtils.sendMessage(dm, "test");
+    }*/
 
     @EventSubscriber
     public void OnMessageReceived(MessageReceivedEvent event)
@@ -60,8 +69,16 @@ public class CommandHandler
 
         if (commands.containsKey(comStr))
         {
-            //Run active command
-            commands.get(comStr).execute(event, argsList, event.getAuthor().getLongID(), event.getGuild().getLongID());
+            //DM
+            if (event.getGuild() == null)
+            {
+                commands.get(comStr).execute(event, argsList, event.getAuthor().getLongID());
+            }
+            //Run command
+            else
+            {
+                commands.get(comStr).execute(event, argsList, event.getAuthor().getLongID(), event.getGuild().getLongID());
+            }
             return;
         }
     }

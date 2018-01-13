@@ -61,6 +61,18 @@ public class Command
         return access.hasAccess(request);
     }
 
+    public void execute(MessageReceivedEvent event, List<String> argsList, long u)
+    {
+        if (access.hasAccess(AccessLevel.EVERYONE))
+        {
+            execute.runCommand(event, argsList);
+        }
+        else
+        {
+            BotUtils.sendMessage(event.getChannel(), "You do not have permission to use this command!\nYou need " + access.getName() + " access or higher to do so!");
+        }
+    }
+
     public void execute(MessageReceivedEvent event, List<String> argsList, long u, long g)
     {
         boolean a = false;
