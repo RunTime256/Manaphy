@@ -27,9 +27,11 @@ public class CommandHandler
         //Add all commands to the map
         OwnerCommands owner = new OwnerCommands();
         TestCommands test = new TestCommands();
+        HelpCommands help = new HelpCommands();
 
         owner.addCommands(commands);
         test.addCommands(commands);
+        help.addCommands(commands);
     }
 
     //Updates playing text when starting up

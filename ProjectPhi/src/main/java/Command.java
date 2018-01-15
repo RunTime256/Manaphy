@@ -75,7 +75,7 @@ public class Command
         }
         catch(FileNotFoundException e)
         {
-            System.out.println("Command file not found");
+            System.out.println("User file not found");
             return;
         }
         JsonArray guilds = jsonO.getJsonArray("users");

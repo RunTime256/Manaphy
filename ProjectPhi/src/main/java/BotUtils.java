@@ -3,13 +3,15 @@ import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.util.DiscordException;
-import sx.blah.discord.util.RateLimitException;
 import sx.blah.discord.util.RequestBuffer;
+
+import java.awt.*;
 
 class BotUtils
 {
     // Constants for use throughout the bot
-    static String BOT_PREFIX = "+";
+    static final String BOT_PREFIX = "+";
+    static final Color DEFAULT_COLOR = new Color(255, 255, 255);
 
     // Handles the creation and getting of a IDiscordClient object for a token
     static IDiscordClient getBuiltDiscordClient(String token)

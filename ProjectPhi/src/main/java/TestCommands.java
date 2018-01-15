@@ -1,5 +1,4 @@
 import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IUser;
 import java.util.Map;
 
 public class TestCommands
