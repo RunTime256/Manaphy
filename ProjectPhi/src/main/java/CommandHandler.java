@@ -27,10 +27,12 @@ public class CommandHandler
         //Add all commands to the map
         OwnerCommands owner = new OwnerCommands();
         TestCommands test = new TestCommands();
+        UtilityCommands utility = new UtilityCommands();
         HelpCommands help = new HelpCommands();
 
         owner.addCommands(commands);
         test.addCommands(commands);
+        utility.addCommands(commands);
         help.addCommands(commands);
     }
 

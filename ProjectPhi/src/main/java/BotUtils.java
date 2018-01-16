@@ -1,11 +1,13 @@
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
+import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.RequestBuffer;
 
 import java.awt.*;
+import java.util.ArrayList;
 
 class BotUtils
 {
@@ -58,5 +60,66 @@ class BotUtils
             }
         });
         */
+    }
+
+    //Sends embedded message
+    static IMessage sendMessage(IChannel channel, EmbedObject message)
+    {
+        // This might look weird but it'll be explained in another page.
+        RequestBuffer.RequestFuture<IMessage> rf = RequestBuffer.request(() -> {
+            try
+            {
+                IMessage mess = channel.sendMessage(message);
+                return mess;
+            }
+            catch (DiscordException e)
+            {
+                System.err.println("Message could not be sent with error: ");
+                e.printStackTrace();
+                return null;
+            }
+        });
+
+        return rf.get();
+    }
+
+    //Returns the user's id, or -1 if it is not correct
+    static long getPing(String user)
+    {
+        //Checks if it's an @ mention
+        if (user.startsWith("<@"))
+        {
+            int start;
+            if (user.startsWith("<@!"))
+            {
+                start = 3;
+            }
+            else
+            {
+                start = 2;
+            }
+            if (user.endsWith(">"))
+            {
+                try
+                {
+                    long l = Long.parseLong(user.substring(start, user.length() - 1));
+                    return l;
+                }
+                catch(Exception e)
+                {
+                    return -1;
+                }
+            }
+        }
+        //Checks whole string
+        try
+        {
+            long l = Long.parseLong(user);
+            return l;
+        }
+        catch(Exception e)
+        {
+            return -1;
+        }
     }
 }

@@ -13,7 +13,7 @@ public class TestCommands
 
     public static void addCommands(Map<String, Command> map)
     {
-        map.put("test", new Command("test", "Provides a test message", AccessLevel.OWNER, (event, args) ->
+        map.put("test", new Command("test", "Provides a test message", BotUtils.BOT_PREFIX + "test", AccessLevel.OWNER, (event, args) ->
         {
             IChannel channel = event.getChannel();
             if (Command.hasChannelPerms(comName, event.getGuild(), channel.getLongID()))
@@ -22,7 +22,7 @@ public class TestCommands
             }
         }));
 
-        map.put("dm", new Command("dm", "DMs a test message", AccessLevel.OWNER, (event, args) ->
+        map.put("dm", new Command("dm", "DMs a test message", BotUtils.BOT_PREFIX + "test", AccessLevel.OWNER, (event, args) ->
         {
             IChannel channel = event.getChannel();
             if (Command.hasChannelPerms(comName, event.getGuild(), channel.getLongID()))

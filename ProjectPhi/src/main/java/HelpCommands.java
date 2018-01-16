@@ -1,4 +1,3 @@
-import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.util.EmbedBuilder;
 
@@ -8,7 +7,6 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -24,7 +22,7 @@ public class HelpCommands
 
     public static void addCommands(Map<String, Command> map)
     {
-        map.put("help", new Command("help", "Lists all available commands and what they do", AccessLevel.EVERYONE, (event, args) ->
+        map.put("help", new Command("help", "Lists all available commands and what they do", BotUtils.BOT_PREFIX + "help", AccessLevel.EVERYONE, (event, args) ->
         {
             IChannel channel = event.getChannel();
             Iterator<Command> iter = map.values().iterator();
@@ -105,9 +103,10 @@ public class HelpCommands
             }
 
             builder.withAuthorName("Help Manual");
+            builder.withAuthorIcon(MainRunner.getClient().getApplicationIconURL());
             builder.withColor(BotUtils.DEFAULT_COLOR);
 
-            channel.sendMessage(builder.build());
+            BotUtils.sendMessage(channel, builder.build());
         }));
     }
 }

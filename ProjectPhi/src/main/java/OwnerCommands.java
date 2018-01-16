@@ -13,7 +13,7 @@ public class OwnerCommands
 
     public static void addCommands(Map<String, Command> map)
     {
-        map.put("shutdown", new Command("shutdown", "Shuts down the bot", AccessLevel.OWNER, (event, args) ->
+        map.put("shutdown", new Command("shutdown", "Shuts down the bot", BotUtils.BOT_PREFIX + "shutdown", AccessLevel.OWNER, (event, args) ->
         {
             IChannel channel = event.getChannel();
             BotUtils.sendMessage(channel, "Shutting down...");

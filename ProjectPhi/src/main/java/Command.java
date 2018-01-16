@@ -14,24 +14,28 @@ public class Command
 {
     private String name;
     private String description;
+    private String syntax;
     private AccessLevel access;
     private SubCommand[] subComms;
     private CommandExecutor execute;
     public static final String TEST = "Test";
+    public static final String UTILITY = "Utility";
 
-    public Command(String n, String d, AccessLevel a, CommandExecutor e)
+    public Command(String n, String d, String x, AccessLevel a, CommandExecutor e)
     {
         name = n;
         description = d;
+        syntax = x;
         access = a;
         subComms = new SubCommand[] {};
         execute = e;
     }
 
-    public Command(String n, String d, AccessLevel a, SubCommand[] s, CommandExecutor e)
+    public Command(String n, String d, String x, AccessLevel a, SubCommand[] s, CommandExecutor e)
     {
         name = n;
         description = d;
+        syntax = x;
         access = a;
         subComms = s;
         execute = e;
@@ -158,6 +162,12 @@ public class Command
         try {
             if (comName == TEST) {
                 JsonReader reader = Json.createReader(new FileReader(TestCommands.PERMS));
+                jsonO = (JsonObject)reader.read();
+                reader.close();
+            }
+            else if (comName == UTILITY)
+            {
+                JsonReader reader = Json.createReader(new FileReader(UtilityCommands.PERMS));
                 jsonO = (JsonObject)reader.read();
                 reader.close();
             }
