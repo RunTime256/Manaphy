@@ -6,7 +6,7 @@
 
     <groupId>com.github.RunTime256</groupId>
     <artifactId>Manaphy</artifactId>
-    <version>0.1</version>
+    <version>0.2</version>
     <repositories>
         <repository> <!-- This repo fixes issues with transitive dependencies -->
             <id>jcenter</id>
