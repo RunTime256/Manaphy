@@ -1,3 +1,4 @@
 resources/
 out/
+target/
 src/main/java/HiddenCommands.java
