@@ -9,13 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 
 public class CommandHandler
 {
     private Map<String, Command> commands;
     private Map<String, Command> hiddenCommands;
-    public Random RAND = new Random();
+    public final int NEW_GUILD_MESSAGE_ID = 1;
 
     public CommandHandler()
     {
@@ -23,84 +22,91 @@ public class CommandHandler
         hiddenCommands = new HashMap<>();
 
         //Add all commands to the map
+        new ManagerCommands(commands);
         new OwnerCommands(commands);
+        new AdminCommands(commands);
+        new ModeratorCommands(commands);
         new TestCommands(commands);
         new UtilityCommands(commands);
         new HelpCommands(commands);
+        new EventCommands(commands);
+        new GameCommands(commands);
+
+        //Commands to be added at a later date that are testable
+        new HelpCommands(hiddenCommands);
+        new HiddenCommands(hiddenCommands);
+        new TwitchCommands(hiddenCommands);
     }
 
     //Updates playing text when starting up
     @EventSubscriber
     public void handle(ReadyEvent event)
     {
-        event.getClient().changePresence(StatusType.ONLINE, ActivityType.PLAYING, "underwater");
+        //event.getClient().changePresence(StatusType.ONLINE, ActivityType.PLAYING, "underwater");
+        event.getClient().changePresence(StatusType.ONLINE, ActivityType.PLAYING, "+help");
+        //event.getClient().changePresence(StatusType.ONLINE, ActivityType.WATCHING, "from afar");
+        //event.getClient().changePresence(StatusType.INVISIBLE);
+
+
     }
 
     //Sends a welcome message upon joining a new server
+
     /*
     @EventSubscriber
     public void OnGuildCreate(GuildCreateEvent event)
     {
-        //Reads the guilds and adds them to a JsonObject
-        IUser owner = event.getGuild().getOwner();
-        JsonObject jsonO;
-        try {
-            JsonReader reader = Json.createReader(new FileReader("../PrivateResources/guilds.json"));
-            jsonO = (JsonObject)reader.read();
-        }
-        catch(FileNotFoundException e)
+        try
         {
-            System.out.println("User file not found");
-            return;
-        }
-        JsonArray guilds = jsonO.getJsonArray("guilds");
-        JsonObjectBuilder build = Json.createObjectBuilder();
-        JsonArrayBuilder arr = Json.createArrayBuilder();
+            String sql;
+            List<Object> params = new ArrayList<>();
+            sql = "SELECT * FROM DiscordDB.Guilds WHERE GuildID = ?";
+            params.add(event.getGuild().getLongID());
+            PreparedStatement statement = JDBCConnection.getStatement(sql, params);
+            ResultSet set = statement.executeQuery();
 
-        //Goes through each channel id to see if it has joined a new guild
-        //(Required due to event firing when connecting to a guild as well)
-        for (int i = 0; i < guilds.size(); i++)
-        {
-            JsonObject guildO = guilds.getJsonObject(i);
-            //Since JsonObjects cannot be changed, a new one must be constructed to write to the file. This prepares Objects as they are read
-            arr.add(Json.createObjectBuilder().add("id", guildO.getJsonNumber("id").longValue()));
-            if (guildO.getJsonNumber("id").longValue() == event.getGuild().getLongID())
+            if (!set.next())
             {
-                return;
+                //Insert guild into table
+                statement.close();
+                sql = "INSERT INTO DiscordDB.Guilds VALUES(?)";
+                params = new ArrayList<>();
+                params.add(event.getGuild().getLongID());
+                statement = JDBCConnection.getStatement(sql, params);
+                statement.executeUpdate();
+
+                //Send new guild message to guild owner
+                sql = "SELECT DiscordDB.EntryDescription FROM MessageEntry WHERE EntryID = ?";
+                params = new ArrayList<>();
+                params.add(NEW_GUILD_MESSAGE_ID);
+                statement = JDBCConnection.getStatement(sql, params);
+                set = statement.executeQuery();
+                if (set.next())
+                {
+                    String message = set.getString("EntryDescription");
+                    IChannel channel = event.getGuild().getOwner().getOrCreatePMChannel();
+                    BotUtils.sendMessage(channel, message);
+                }
+                statement.close();
             }
+            statement.close();
         }
-        //Add the new guild because it was not in the json file
-        arr.add(Json.createObjectBuilder().add("id", event.getGuild().getLongID()));
-        build.add("guilds", arr);
-        JsonObject w = build.build();
-        //Overwrites the original json to add new guild
-        try {
-            JsonWriter writer = Json.createWriter(new FileWriter("../PrivateResources/guilds.json"));
-            writer.writeObject(w);
-            writer.close();
-        }
-        catch(FileNotFoundException e)
+        catch (SQLException e)
         {
-            System.out.println("User file not found");
+            System.out.println("Couldn't process Result Set");
+            e.printStackTrace();
             return;
         }
-        catch(IOException e)
-        {
-            System.out.println("IO Error");
-            return;
-        }
-        IChannel dm = MainRunner.getClient().getOrCreatePMChannel(owner);
-        BotUtils.sendMessage(dm, "test");
     }
     */
+
 
     //Performs a command if the message received triggers one
     @EventSubscriber
     public void OnMessageReceived(MessageReceivedEvent event)
     {
         String message = event.getMessage().getContent();
-        String lMessage = message.toLowerCase();
-        String[] args = lMessage.split(" ");
+        String[] args = message.split(" ");
         int numArgs = args.length - 1;
 
         if (numArgs == -1)
@@ -111,7 +117,11 @@ public class CommandHandler
         //Checks to see if there is a passive command to run
         if (!(args[0].startsWith(BotUtils.BOT_PREFIX) || args[0].startsWith(BotUtils.HIDDEN_PREFIX)))
         {
-            //Run passive commands
+            //Replicate DMs if mimicking is enabled
+            if (event.getGuild() == null && ManagerCommands.isMimicActive() && ManagerCommands.getMimicReceive().getLongID() == event.getChannel().getLongID())
+            {
+                BotUtils.sendMessage(ManagerCommands.getMimicSend(), event.getMessage().getContent());
+            }
             return;
         }
 
@@ -120,6 +130,7 @@ public class CommandHandler
         List<String> argsList = new ArrayList<>(Arrays.asList(args));
         argsList.remove(0);
         Map<String, Command> map;
+        //Determines command map based on prefix
         if (args[0].startsWith(BotUtils.BOT_PREFIX))
         {
             map = commands;
@@ -130,23 +141,27 @@ public class CommandHandler
         }
         else
         {
-            map = null;
+            return;
         }
 
         //Checks to see if there is a command with the given key
         if (map.containsKey(comStr))
         {
-            //DM
-            if (event.getGuild() == null)
+            try
             {
-                map.get(comStr).execute(event, argsList, event.getAuthor().getLongID());
+                event.getChannel().setTypingStatus(true);
+                map.get(comStr).execute(event, argsList);
             }
-            //Run command
-            else
+            catch (Exception e)
             {
-                map.get(comStr).execute(event, argsList, event.getAuthor().getLongID(), event.getGuild().getLongID());
+                BotUtils.sendCommandError(event.getChannel());
+                System.out.println("\nNew " + e.getClass().getSimpleName() + " at " + BotUtils.formatDate(BotUtils.now().toInstant()) + "\n");
+                e.printStackTrace();
             }
-            return;
+            finally
+            {
+                event.getChannel().setTypingStatus(false);
+            }
         }
     }
 }

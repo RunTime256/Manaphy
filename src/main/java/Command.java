@@ -1,12 +1,12 @@
-import junit.framework.Test;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
-import sx.blah.discord.handle.obj.IGuild;
 
-import com.google.gson.Gson;
-
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Command
 {
@@ -14,34 +14,45 @@ public class Command
     private String description;
     private String syntax;
     private AccessLevel access;
-    private SubCommand[] subComms;
+    private Map<String, Command> subComms;
     private CommandExecutor execute;
-    public static final String TEST = "Test";
-    public static final String OWNER = "Owner";
-    public static final String HELP = "Help";
-    public static final String UTILITY = "Utility";
-    private static Gson gson;
 
+    //Useful Strings for commands
+    public static final String MANAGER = "Manager";
+    public static final String TESTER = "Tester";
+    public static final String OWNER = "Owner";
+    public static final String ADMIN = "Admin";
+    public static final String MOD = "Mod";
+    public static final String HELP = "Help";
+    public static final String TEST = "Test";
+    public static final String UTILITY = "Utility";
+    public static final String EVENT = "Event";
+
+    //Create a standard command
     public Command(String n, String d, String x, AccessLevel a, CommandExecutor e)
     {
         name = n;
         description = d;
         syntax = x;
         access = a;
-        subComms = new SubCommand[] {};
+        subComms = new HashMap<>();
         execute = e;
-        gson = new Gson();
     }
 
-    public Command(String n, String d, String x, AccessLevel a, SubCommand[] s, CommandExecutor e)
+    //Create a command with an array of sub-commands
+    public Command(String n, String d, String x, AccessLevel a, Command[] s, CommandExecutor e)
     {
         name = n;
         description = d;
         syntax = x;
         access = a;
-        subComms = s;
+        subComms = new HashMap<>();
+        //Add sub-commands to a map
+        for (int i = 0; i < s.length; i++)
+        {
+            subComms.put(s[i].getName(), s[i]);
+        }
         execute = e;
-        gson = new Gson();
     }
 
     public String getName()
@@ -54,168 +65,170 @@ public class Command
         return description;
     }
 
+    public String getSyntax()
+    {
+        return syntax;
+    }
+
     public AccessLevel getAccess()
     {
         return access;
     }
 
-    public SubCommand[] getSubComms()
+    public Map<String, Command> getSubComms()
     {
         return subComms;
     }
 
-    public boolean hasAccess(AccessLevel request)
+    //Executes the command
+    public void execute(MessageReceivedEvent event, List<String> argsList) throws SQLException
     {
-        return access.hasAccess(request);
+        JDBCConnection.connect();
+        String sql;
+        List<Object> params = new ArrayList<>();
+        //Checks for DMs or if the command is a manager command
+        //(Manager gets all access)
+        if (event.getGuild() == null || access == AccessLevel.MANAGER)
+        {
+            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID IS NULL";
+            params.add(event.getAuthor().getLongID());
+        }
+        else
+        {
+            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID = ?";
+            params.add(event.getAuthor().getLongID());
+            params.add(event.getGuild().getLongID());
+        }
+        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
+        ResultSet set = statement.executeQuery();
+
+        //Default access level of everyone, so not every user needs to be stored
+        int accessLevel = AccessLevel.EVERYONE.getLevel();
+        if (set.next())
+        {
+            accessLevel = set.getInt("AccessLevel");
+        }
+        statement.close();
+
+        if (access.hasAccess(accessLevel))
+        {
+            //Checks args to see if there's a sub command available
+            if (argsList.size() > 0)
+            {
+                execute(event, argsList, 0);
+                return;
+            }
+            else
+            {
+                execute.runCommand(event, argsList);
+            }
+        }
+        JDBCConnection.disconnect();
     }
 
-    //Executes the command from a dm
-    public void execute(MessageReceivedEvent event, List<String> argsList, long u)
+    //Checks if there is a sub command with given args and executes that one
+    public void execute(MessageReceivedEvent event, List<String> argsList, int pos) throws SQLException
     {
-        JSONDMCommands dmCommands;
-        String file = "dm_permissions.json";
-        try
+        String sql;
+        List<Object> params = new ArrayList<>();
+        //Checks for DMs or if the command is a manager command
+        //(Manager gets all access)
+        if (event.getGuild() == null || access == AccessLevel.MANAGER)
         {
-            dmCommands = gson.fromJson(new FileReader("resources/" + file), JSONDMCommands.class);
+            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID IS NULL";
+            params.add(event.getAuthor().getLongID());
         }
-        catch(FileNotFoundException e)
+        else
         {
-            System.out.println(file + " not found");
-            return;
+            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID = ?";
+            params.add(event.getAuthor().getLongID());
+            params.add(event.getGuild().getLongID());
         }
+        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
+        ResultSet set = statement.executeQuery();
 
-        for (int i = 0; i < dmCommands.users.length; i++)
+        //Default access level of everyone, so not every user needs to be stored
+        int accessLevel = AccessLevel.EVERYONE.getLevel();
+        if (set.next())
         {
-            JSONUserAccess userAccess = dmCommands.users[i];
-            if (userAccess.id == u)
+            accessLevel = set.getInt("AccessLevel");
+        }
+        statement.close();
+
+        //Executes a sub command if it has permission
+        if (pos < argsList.size())
+        {
+            if (subComms.containsKey(argsList.get(pos)))
             {
-                //Executes the command if the user has permission
-                if (access.hasAccess(new AccessLevel(userAccess.access_level)))
+                Command command = subComms.get(argsList.get(pos));
+                if (command.getAccess().hasAccess(accessLevel))
                 {
-                    execute.runCommand(event, argsList);
-                }
-                else
-                {
-                    BotUtils.sendMessage(event.getChannel(), "You do not have permission to use this command!\nYou need " + access.getName() + " access or higher to do so!");
+                    command.execute(event, argsList, pos + 1);
                 }
                 return;
             }
         }
-    }
-
-    //Executes the command from a guild
-    public void execute(MessageReceivedEvent event, List<String> argsList, long u, long g)
-    {
-        JSONUserCommands userCommands;
-        String file = "user_permissions.json";
-        try
+        if (access.hasAccess(accessLevel))
         {
-            userCommands = gson.fromJson(new FileReader("resources/" + file), JSONUserCommands.class);
-        }
-        catch(FileNotFoundException e)
-        {
-            System.out.println(file + " not found");
-            return;
-        }
-
-        for (int i = 0; i < userCommands.guilds.length; i++)
-        {
-            JSONGuildUserAccess guild = userCommands.guilds[i];
-            if (guild.id == g)
-            {
-                for (int j = 0; j < guild.users.length; j++)
-                {
-                    JSONUserAccess userAccess = guild.users[j];
-                    if (userAccess.id == u)
-                    {
-                        //Executes the command if the user has permission
-                        if (access.hasAccess(new AccessLevel(userAccess.access_level)))
-                        {
-                            execute.runCommand(event, argsList);
-                        }
-                        else
-                        {
-                            BotUtils.sendMessage(event.getChannel(), "You do not have permission to use this command!\nYou need " + access.getName() + " access or higher to do so!");
-                        }
-                        return;
-                    }
-                }
-                return;
-            }
+            execute.runCommand(event, argsList);
         }
     }
 
     //Checks if the bot has permission to use the command in the current channel
-    public static boolean hasChannelPerms(String comName, IGuild g, long c)
+    public static boolean hasChannelPerms(MessageReceivedEvent event, String type, String comName) throws SQLException
     {
-        //If it's in a dm, it has permission
-        if (g == null)
+        //If it's in a DM, it has permission
+        if (event.getGuild() == null)
             return true;
 
-        JSONChannelPermissions channelPermissions;
-        String file = "";
-        try
+        String sql;
+        List<Object> params = new ArrayList<>();
+        //Check blacklist for category
+        sql = "SELECT * FROM DiscordDB.BlacklistCommands WHERE GuildID = ? AND ChannelID = ? AND Type = ? AND Name IS NULL AND Active = FALSE";
+        params.add(event.getGuild().getLongID());
+        params.add(event.getChannel().getLongID());
+        params.add(type);
+        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
+        ResultSet set = statement.executeQuery();
+        if (set.next())
         {
-            if (comName == TEST)
-            {
-                file = TestCommands.PERMS;
-                channelPermissions = gson.fromJson(new FileReader("resources/" + file), JSONChannelPermissions.class);
-            }
-            else if (comName == UTILITY)
-            {
-                file = UtilityCommands.PERMS;
-                channelPermissions = gson.fromJson(new FileReader("resources/" + file), JSONChannelPermissions.class);
-            }
-            else if (comName == OWNER)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        catch (FileNotFoundException e)
-        {
-            System.out.println(file + " not found");
+            statement.close();
             return false;
         }
-
-        for (int i = 0; i < channelPermissions.guilds.length; i++)
+        statement.close();
+        //Checks blacklist for single command
+        sql = "SELECT * FROM DiscordDB.BlacklistCommands WHERE GuildID = ? AND ChannelID = ? AND Type = ? AND Name = ? AND Active = FALSE";
+        params.add(comName);
+        statement = JDBCConnection.getStatement(sql, params);
+        set = statement.executeQuery();
+        if (set.next())
         {
-            JSONGuild guild = channelPermissions.guilds[i];
-            if (guild.id == g.getLongID())
-            {
-                for (int j = 0; j < guild.channels.length; j++)
-                {
-                    JSONChannel channel = guild.channels[j];
-                    if (channel.id == c)
-                    {
-                        //Checks if the channel has permission, and if so, checks if the specific command was blocked
-                        if (channel.active)
-                        {
-                            for (int k = 0; k < channel.blocked_commands.length; k++)
-                            {
-                                if (comName.equals(channel.blocked_commands[k]))
-                                {
-                                    return false;
-                                } else
-                                {
-                                    return true;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                    break;
-                }
-                break;
-            }
+            statement.close();
+            return false;
         }
-
+        statement.close();
+        //Checks whitelist for category
+        sql = "SELECT * FROM DiscordDB.WhitelistCommands WHERE GuildID = ? AND ChannelID = ? AND Type = ? AND Name IS NULL AND Active = FALSE";
+        params.remove(params.size() - 1);
+        statement = JDBCConnection.getStatement(sql, params);
+        set = statement.executeQuery();
+        if (set.next())
+        {
+            statement.close();
+            return true;
+        }
+        statement.close();
+        //Checks whitelist for single command
+        sql = "SELECT * FROM DiscordDB.WhitelistCommands WHERE GuildID = ? AND ChannelID = ? AND Type = ? AND Name = ? AND Active = FALSE";
+        params.add(comName);
+        statement = JDBCConnection.getStatement(sql, params);
+        set = statement.executeQuery();
+        if (set.next())
+        {
+            statement.close();
+            return true;
+        }
+        statement.close();
         return true;
     }
 }
