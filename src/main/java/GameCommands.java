@@ -111,7 +111,7 @@ public class GameCommands
                                             return;
                                         }
                                         //Cooldown of 1 hour, checks if next command is before that
-                                        else if (set.getTimestamp("StartTime").toInstant().isAfter(BotUtils.now().minusHours(1).toInstant()))
+                                        else if (set.getTimestamp("StartTime").toInstant().isAfter(BotUtils.now().minusMinutes(5).toInstant()))
                                         {
                                             ZonedDateTime start = set.getTimestamp("StartTime").toInstant().atZone(ZoneId.of("UTC-6"));
                                             ZonedDateTime now = BotUtils.now();
@@ -123,7 +123,7 @@ public class GameCommands
                                             }
                                             else
                                             {
-                                                mins = 59 - now.getMinute() + start.getMinute();
+                                                mins = 5 - now.getMinute() + start.getMinute();
                                             }
                                             if (now.getSecond() < start.getSecond())
                                             {
@@ -135,7 +135,7 @@ public class GameCommands
                                                 mins--;
                                             }
 
-                                            BotUtils.sendMessage(event.getChannel(), "There is a 1 hour cooldown to play. Please wait " + mins + " minutes and " + secs + " seconds to try again.");
+                                            BotUtils.sendMessage(event.getChannel(), "There is a 5 minute cooldown to play. Please wait " + mins + " minutes and " + secs + " seconds to try again.");
                                             return;
                                         }
                                     }
@@ -538,7 +538,7 @@ public class GameCommands
                                                             IUser author = event.getAuthor();
                                                             builder.withAuthorIcon(author.getAvatarURL());
                                                             builder.withAuthorName(author.getName());
-                                                            builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #23");
+                                                            builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #22");
                                                             builder.appendField("User ID", "" +  author.getLongID(), false);
                                                             builder.appendField("Streak Number", "2", false);
 
@@ -599,7 +599,7 @@ public class GameCommands
                                                             IUser author = event.getAuthor();
                                                             builder.withAuthorIcon(author.getAvatarURL());
                                                             builder.withAuthorName(author.getName());
-                                                            builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #23");
+                                                            builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #22");
                                                             builder.appendField("User ID", "" +  author.getLongID(), false);
                                                             builder.appendField("Streak Number", "4", false);
 
@@ -659,7 +659,7 @@ public class GameCommands
                                                             IUser author = event.getAuthor();
                                                             builder.withAuthorIcon(author.getAvatarURL());
                                                             builder.withAuthorName(author.getName());
-                                                            builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #23");
+                                                            builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #22");
                                                             builder.appendField("User ID", "" +  author.getLongID(), false);
                                                             builder.appendField("Streak Number", "7", false);
 
@@ -735,6 +735,32 @@ public class GameCommands
                                             for (int i = 0; i < rand; i++)
                                             {
                                                 set.next();
+                                            }
+                                        }
+                                        else
+                                        {
+                                            sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'War'";
+                                            statement = JDBCConnection.getStatement(sql, params);
+                                            set = statement.executeQuery();
+                                            if (set.next())
+                                            {
+                                                long guild = set.getLong("Entry");
+                                                sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Logs'";
+                                                statement = JDBCConnection.getStatement(sql, params);
+                                                set = statement.executeQuery();
+                                                if (set.next())
+                                                {
+                                                    long channel = set.getLong("Entry");
+
+                                                    EmbedBuilder builder = new EmbedBuilder();
+                                                    IUser author = event.getAuthor();
+                                                    builder.withAuthorIcon(author.getAvatarURL());
+                                                    builder.withAuthorName(author.getName());
+                                                    builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #23 (Secret message)");
+                                                    builder.appendField("User ID", "" +  author.getLongID(), false);
+
+                                                    BotUtils.sendMessage(event.getClient().getGuildByID(guild).getChannelByID(channel), builder.build());
+                                                }
                                             }
                                         }
                                         response1 = set.getString("Entry");
