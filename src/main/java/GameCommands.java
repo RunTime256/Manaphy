@@ -119,7 +119,7 @@ public class GameCommands
                                             int secs;
                                             if (now.getMinute() < start.getMinute())
                                             {
-                                                mins = start.getMinute() - now.getMinute();
+                                                mins = start.getMinute() - now.getMinute() - 55;
                                             }
                                             else
                                             {
