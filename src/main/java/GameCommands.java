@@ -741,16 +741,16 @@ public class GameCommands
                                         {
                                             sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'War'";
                                             statement = JDBCConnection.getStatement(sql, params);
-                                            set = statement.executeQuery();
-                                            if (set.next())
+                                            ResultSet warSet = statement.executeQuery();
+                                            if (warSet.next())
                                             {
-                                                long guild = set.getLong("Entry");
+                                                long guild = warSet.getLong("Entry");
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Logs'";
                                                 statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
-                                                if (set.next())
+                                                warSet = statement.executeQuery();
+                                                if (warSet.next())
                                                 {
-                                                    long channel = set.getLong("Entry");
+                                                    long channel = warSet.getLong("Entry");
 
                                                     EmbedBuilder builder = new EmbedBuilder();
                                                     IUser author = event.getAuthor();
