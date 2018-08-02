@@ -111,7 +111,7 @@ public class GameCommands
                                             return;
                                         }
                                         //Cooldown of 1 hour, checks if next command is before that
-                                        else if (set.getTimestamp("StartTime").toInstant().isAfter(BotUtils.now().minusMinutes(5).toInstant()))
+                                        else if (set.getTimestamp("StartTime").toInstant().isAfter(BotUtils.now().minusMinutes(3).toInstant()))
                                         {
                                             ZonedDateTime start = set.getTimestamp("StartTime").toInstant().atZone(ZoneId.of("UTC-6"));
                                             ZonedDateTime now = BotUtils.now();
@@ -119,11 +119,11 @@ public class GameCommands
                                             int secs;
                                             if (now.getMinute() < start.getMinute())
                                             {
-                                                mins = start.getMinute() - now.getMinute() - 55;
+                                                mins = start.getMinute() - now.getMinute() - 57;
                                             }
                                             else
                                             {
-                                                mins = 5 - now.getMinute() + start.getMinute();
+                                                mins = 3 - now.getMinute() + start.getMinute();
                                             }
                                             if (now.getSecond() < start.getSecond())
                                             {
@@ -135,7 +135,7 @@ public class GameCommands
                                                 mins--;
                                             }
 
-                                            BotUtils.sendMessage(event.getChannel(), "There is a 5 minute cooldown to play. Please wait " + mins + " minutes and " + secs + " seconds to try again.");
+                                            BotUtils.sendMessage(event.getChannel(), "There is a 3 minute cooldown to play. Please wait " + mins + " minutes and " + secs + " seconds to try again.");
                                             return;
                                         }
                                     }
@@ -720,7 +720,7 @@ public class GameCommands
                                     int rand = BotUtils.RAND.nextInt(max);
                                     if (rand == 0)
                                     {
-                                        if (BotUtils.RAND.nextInt(500 / max) != 0)
+                                        if (BotUtils.RAND.nextInt(200 / max) != 0)
                                         {
                                             rand = BotUtils.RAND.nextInt(max - 1) + 1;
                                         }
