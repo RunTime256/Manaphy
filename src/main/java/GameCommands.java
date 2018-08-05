@@ -720,7 +720,7 @@ public class GameCommands
                                     int rand = BotUtils.RAND.nextInt(max);
                                     if (rand == 0)
                                     {
-                                        if (BotUtils.RAND.nextInt(200 / max) != 0)
+                                        if (BotUtils.RAND.nextInt(100 / max) != 0)
                                         {
                                             rand = BotUtils.RAND.nextInt(max - 1) + 1;
                                         }
