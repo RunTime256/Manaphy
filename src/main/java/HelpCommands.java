@@ -1,7 +1,6 @@
 import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.util.EmbedBuilder;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,36 +11,41 @@ public class HelpCommands
 {
     public HelpCommands(Map<String, Command> map)
     {
-        map.put("help", new Command("help", "Lists all available commands and what they do", BotUtils.BOT_PREFIX + "help", AccessLevel.EVERYONE, (event, args) ->
+        map.put("help", new Command("help", "Lists all available commands and what they do", BotUtils.BOT_PREFIX + "help [command]", AccessLevel.EVERYONE, (event, args) ->
         {
             IChannel channel = event.getChannel();
             EmbedBuilder builder = new EmbedBuilder();
 
             String sql;
             List<Object> params = new ArrayList<>();
-            //DM command options
-            if (event.getGuild() == null)
-            {
-                sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID IS NULL";
-                params.add(event.getAuthor().getLongID());
-            }
-            //Guild command options
-            else
-            {
-                sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID = ?";
-                params.add(event.getAuthor().getLongID());
-                params.add(event.getGuild().getLongID());
-            }
-            PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-            ResultSet set = statement.executeQuery();
+            //Checks if user has widespread permissions
+            //(Manager gets all access)
+            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID IS NULL";
+            params.add(event.getAuthor().getLongID());
+            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+
+            //Default access level of everyone, so not every user needs to be stored
             int accessLevel = AccessLevel.EVERYONE.getLevel();
-            if (set == null)
-                return;
-            else if (set.next())
+            if (set.next())
             {
                 accessLevel = set.getInt("AccessLevel");
             }
-            statement.close();
+
+            //Checks if user has guild specific permissions
+            if (event.getGuild() != null)
+            {
+                sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID = ?";
+                params.clear();
+                params.add(event.getAuthor().getLongID());
+                params.add(event.getGuild().getLongID());
+            }
+            set = JDBCConnection.getStatement(sql, params).executeQuery();
+
+            //Guild permissions override widespread permissions
+            if (set.next())
+            {
+                accessLevel = set.getInt("AccessLevel");
+            }
 
             //Set iterator to the last correct command, or list all main commands
             Iterator<Command> iter;
@@ -81,7 +85,7 @@ public class HelpCommands
             while (iter.hasNext())
             {
                 Command c = iter.next();
-                if (c.getAccess().hasAccess(accessLevel))
+                if (c.getAccess().isAccessible(accessLevel))
                 {
                     builder.appendField(c.getSyntax(), c.getDescription(), b);
                     b = true;

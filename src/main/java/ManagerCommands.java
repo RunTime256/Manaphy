@@ -1,11 +1,16 @@
+import com.univocity.parsers.fixed.FixedWidthFields;
+import com.univocity.parsers.fixed.FixedWidthWriter;
+import com.univocity.parsers.fixed.FixedWidthWriterSettings;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.events.IListener;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 
+import java.io.StringWriter;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,9 +61,10 @@ public class ManagerCommands
                         return;
                 }
                 event.getClient().changePresence(status);
+                BotUtils.sendMessage(event.getChannel(), "Presence has been updated to `" + args.get(0) + "`");
             }
             //Set status with text
-            if (args.size() >= 3)
+            else if (args.size() >= 3)
             {
                 //Sets the status type (color it appears as)
                 switch (args.get(0))
@@ -97,6 +103,11 @@ public class ManagerCommands
                 String message = BotUtils.combineArgs(args, 2);
 
                 event.getClient().changePresence(status, activity, message);
+                BotUtils.sendMessage(event.getChannel(), "Presence has been updated to `" + args.get(0) + "` with message `" + message + "`");
+            }
+            else
+            {
+                BotUtils.help(map, event, args, "presence");
             }
         }));
 
@@ -109,16 +120,18 @@ public class ManagerCommands
                 {
                     if (args.get(0).equals("stop"))
                     {
+                        long id = mimicSend.getLongID();
                         mimicSend = null;
                         mimicReceive = null;
                         mimicActive = false;
+                        BotUtils.sendMessage(event.getChannel(), "Mimicking ended in <#" + id + ">");
                     }
                     else
                     {
                         BotUtils.help(map, event, args, "mimic");
                     }
                 }
-                if (args.size() >= 4)
+                else if (args.size() == 3)
                 {
                     if (args.get(0).equals("start"))
                     {
@@ -128,6 +141,7 @@ public class ManagerCommands
                             mimicSend = event.getClient().getGuildByID(Long.parseLong(args.get(1))).getChannelByID(Long.parseLong(args.get(2)));
                             mimicReceive = event.getChannel();
                             mimicActive = true;
+                            BotUtils.sendMessage(event.getChannel(), "Mimicking started in <#" + mimicSend.getLongID() + ">");
                         }
                         catch (NumberFormatException e)
                         {
@@ -138,6 +152,10 @@ public class ManagerCommands
                     {
                         BotUtils.help(map, event, args, "mimic");
                     }
+                }
+                else
+                {
+                    BotUtils.help(map, event, args, "mimic");
                 }
             }
         }));
@@ -158,8 +176,7 @@ public class ManagerCommands
                     {
                         String sql = "SELECT Count(*) AS Count FROM " + BotUtils.combineArgs(args, i + 2);
                         List<Object> params = new ArrayList<>();
-                        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                        ResultSet set = statement.executeQuery();
+                        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                         if (set.next())
                         {
                             IMessage message = BotUtils.sendMessage(event.getChannel(), "Are you sure you want to drop table `" + args.get(i + 2) + "` with " + set.getLong("Count") + " row(s)?");
@@ -201,8 +218,7 @@ public class ManagerCommands
                     {
                         String sql = "SELECT Count(*) AS Count FROM " + BotUtils.combineArgs(args, i + 2);
                         List<Object> params = new ArrayList<>();
-                        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                        ResultSet set = statement.executeQuery();
+                        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                         if (set.next())
                         {
                             IMessage message = BotUtils.sendMessage(event.getChannel(), "Are you sure you want to truncate table `" + args.get(i + 2) + "` with " + set.getLong("Count") + " row(s)?");
@@ -244,8 +260,7 @@ public class ManagerCommands
                     {
                         String sql = "SELECT Count(*) AS Count " + BotUtils.combineArgs(args, i + 1);
                         List<Object> params = new ArrayList<>();
-                        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                        ResultSet set = statement.executeQuery();
+                        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                         if (set.next())
                         {
                             IMessage message = BotUtils.sendMessage(event.getChannel(), "Are you sure you want to delete " + set.getLong("Count") + " row(s) in table + `" + args.get(i + 2) + "`");
@@ -287,8 +302,7 @@ public class ManagerCommands
                     {
                         String sql = "SELECT Count(*) AS Count FROM " + args.get(i + 2);
                         List<Object> params = new ArrayList<>();
-                        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                        ResultSet set = statement.executeQuery();
+                        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                         if (set.next())
                         {
                             IMessage message = BotUtils.sendMessage(event.getChannel(), "Are you sure you want to alter table `" + args.get(i + 2) + "` with " + set.getLong("Count") + " row(s)?");
@@ -326,12 +340,59 @@ public class ManagerCommands
                             return;
                         }
                     }
+                    if (args.get(i).equals("SELECT"))
+                    {
+                        String sql = BotUtils.combineArgs(args, 0);
+                        List<Object> params = new ArrayList<>();
+                        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+                        ResultSetMetaData data = set.getMetaData();
+
+                        String[] cols = new String[data.getColumnCount()];
+                        int[] maxLength = new int[cols.length];
+                        for (int j = 0; j < cols.length; j++)
+                        {
+                            cols[j] = data.getColumnName(j+1);
+                            maxLength[j] = cols[j].length() + 1;
+                        }
+                        List<String[]> rows = new ArrayList<>();
+
+                        while (set.next())
+                        {
+                            String[] temp = new String[cols.length];
+                            for (int j = 0; j < cols.length; j++)
+                            {
+                                temp[j] = set.getString(j+1);
+                                if (temp[j] != null && temp[j].length() >= maxLength[j])
+                                {
+                                    maxLength[j] = temp[j].length() + 1;
+                                }
+                            }
+                            rows.add(temp);
+                        }
+                        FixedWidthWriter writer = new FixedWidthWriter(new StringWriter(), new FixedWidthWriterSettings(new FixedWidthFields(cols, maxLength)));
+                        String message = "`" + writer.writeHeadersToString().trim();
+
+                        for (int j = 0; j < rows.size(); j++)
+                        {
+                            String temp = writer.writeRowToString(rows.get(j)).trim().replace("`", "\\`");
+                            if (message.length() + temp.length() + 1 > 2000)
+                            {
+                                BotUtils.sendMessage(event.getChannel(), message + "`");
+                                message = "`" + temp;
+                            }
+                            else
+                            {
+                                message += "\n" + temp;
+                            }
+                        }
+                        BotUtils.sendMessage(event.getChannel(), message + "`");
+                        return;
+                    }
                 }
 
                 String sql = BotUtils.combineArgs(args, 0);
                 List<Object> params = new ArrayList<>();
-                PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                statement.execute();
+                JDBCConnection.getStatement(sql, params).execute();
 
                 BotUtils.sendMessage(event.getChannel(), "Statement executed successfully!");
             }
@@ -366,8 +427,7 @@ public class ManagerCommands
                     try
                     {
                         List<Object> params = new ArrayList<>();
-                        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                        statement.executeUpdate();
+                        JDBCConnection.getStatement(sql, params).executeUpdate();
                         BotUtils.sendMessage(reactionAddEvent.getChannel(), "Statement executed successfully!");
                         triggered = true;
                         reactionAddEvent.getClient().getDispatcher().unregisterListener(this);

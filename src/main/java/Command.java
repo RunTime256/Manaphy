@@ -1,6 +1,5 @@
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -86,21 +85,11 @@ public class Command
         JDBCConnection.connect();
         String sql;
         List<Object> params = new ArrayList<>();
-        //Checks for DMs or if the command is a manager command
+        //Checks if user has widespread permissions
         //(Manager gets all access)
-        if (event.getGuild() == null || access == AccessLevel.MANAGER)
-        {
-            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID IS NULL";
-            params.add(event.getAuthor().getLongID());
-        }
-        else
-        {
-            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID = ?";
-            params.add(event.getAuthor().getLongID());
-            params.add(event.getGuild().getLongID());
-        }
-        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-        ResultSet set = statement.executeQuery();
+        sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID IS NULL";
+        params.add(event.getAuthor().getLongID());
+        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
         //Default access level of everyone, so not every user needs to be stored
         int accessLevel = AccessLevel.EVERYONE.getLevel();
@@ -108,9 +97,24 @@ public class Command
         {
             accessLevel = set.getInt("AccessLevel");
         }
-        statement.close();
 
-        if (access.hasAccess(accessLevel))
+        //Checks if user has guild specific permissions
+        if (event.getGuild() != null)
+        {
+            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID = ?";
+            params.clear();
+            params.add(event.getAuthor().getLongID());
+            params.add(event.getGuild().getLongID());
+        }
+        set = JDBCConnection.getStatement(sql, params).executeQuery();
+
+        //Guild permissions override widespread permissions
+        if (set.next())
+        {
+            accessLevel = set.getInt("AccessLevel");
+        }
+
+        if (access.isAccessible(accessLevel))
         {
             //Checks args to see if there's a sub command available
             if (argsList.size() > 0)
@@ -129,23 +133,14 @@ public class Command
     //Checks if there is a sub command with given args and executes that one
     public void execute(MessageReceivedEvent event, List<String> argsList, int pos) throws SQLException
     {
+        JDBCConnection.connect();
         String sql;
         List<Object> params = new ArrayList<>();
-        //Checks for DMs or if the command is a manager command
+        //Checks if user has widespread permissions
         //(Manager gets all access)
-        if (event.getGuild() == null || access == AccessLevel.MANAGER)
-        {
-            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID IS NULL";
-            params.add(event.getAuthor().getLongID());
-        }
-        else
-        {
-            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID = ?";
-            params.add(event.getAuthor().getLongID());
-            params.add(event.getGuild().getLongID());
-        }
-        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-        ResultSet set = statement.executeQuery();
+        sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID IS NULL";
+        params.add(event.getAuthor().getLongID());
+        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
         //Default access level of everyone, so not every user needs to be stored
         int accessLevel = AccessLevel.EVERYONE.getLevel();
@@ -153,7 +148,22 @@ public class Command
         {
             accessLevel = set.getInt("AccessLevel");
         }
-        statement.close();
+
+        //Checks if user has guild specific permissions
+        if (event.getGuild() != null)
+        {
+            sql = "SELECT AccessLevel FROM DiscordDB.Users WHERE UserID = ? AND GuildID = ?";
+            params.clear();
+            params.add(event.getAuthor().getLongID());
+            params.add(event.getGuild().getLongID());
+        }
+        set = JDBCConnection.getStatement(sql, params).executeQuery();
+
+        //Guild permissions override widespread permissions
+        if (set.next())
+        {
+            accessLevel = set.getInt("AccessLevel");
+        }
 
         //Executes a sub command if it has permission
         if (pos < argsList.size())
@@ -161,14 +171,14 @@ public class Command
             if (subComms.containsKey(argsList.get(pos)))
             {
                 Command command = subComms.get(argsList.get(pos));
-                if (command.getAccess().hasAccess(accessLevel))
+                if (command.getAccess().isAccessible(accessLevel))
                 {
                     command.execute(event, argsList, pos + 1);
                 }
                 return;
             }
         }
-        if (access.hasAccess(accessLevel))
+        if (access.isAccessible(accessLevel))
         {
             execute.runCommand(event, argsList);
         }
@@ -188,47 +198,35 @@ public class Command
         params.add(event.getGuild().getLongID());
         params.add(event.getChannel().getLongID());
         params.add(type);
-        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-        ResultSet set = statement.executeQuery();
+        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
         if (set.next())
         {
-            statement.close();
             return false;
         }
-        statement.close();
         //Checks blacklist for single command
         sql = "SELECT * FROM DiscordDB.BlacklistCommands WHERE GuildID = ? AND ChannelID = ? AND Type = ? AND Name = ? AND Active = FALSE";
         params.add(comName);
-        statement = JDBCConnection.getStatement(sql, params);
-        set = statement.executeQuery();
+        set = JDBCConnection.getStatement(sql, params).executeQuery();
         if (set.next())
         {
-            statement.close();
             return false;
         }
-        statement.close();
         //Checks whitelist for category
         sql = "SELECT * FROM DiscordDB.WhitelistCommands WHERE GuildID = ? AND ChannelID = ? AND Type = ? AND Name IS NULL AND Active = FALSE";
         params.remove(params.size() - 1);
-        statement = JDBCConnection.getStatement(sql, params);
-        set = statement.executeQuery();
+        set = JDBCConnection.getStatement(sql, params).executeQuery();
         if (set.next())
         {
-            statement.close();
             return true;
         }
-        statement.close();
         //Checks whitelist for single command
         sql = "SELECT * FROM DiscordDB.WhitelistCommands WHERE GuildID = ? AND ChannelID = ? AND Type = ? AND Name = ? AND Active = FALSE";
         params.add(comName);
-        statement = JDBCConnection.getStatement(sql, params);
-        set = statement.executeQuery();
+        set = JDBCConnection.getStatement(sql, params).executeQuery();
         if (set.next())
         {
-            statement.close();
             return true;
         }
-        statement.close();
         return true;
     }
 }

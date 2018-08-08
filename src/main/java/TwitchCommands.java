@@ -26,8 +26,7 @@ public class TwitchCommands
                                         List<Object> params = new ArrayList<>();
                                         params.add(event.getGuild().getLongID());
                                         params.add(TwitchUtils.getTwitchClient().getChannelEndpoint().getChannel(args.get(1)).getId());
-                                        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                        ResultSet set = statement.executeQuery();
+                                        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
                                         if (set == null)
                                             return;
@@ -41,7 +40,6 @@ public class TwitchCommands
                                             sql = "INSERT INTO DiscordDB.TwitchLive (GuildID, TwitchID, ChannelID, Message) VALUES (?, ?, ?, ?)";
                                             params.add(c);
                                         }
-                                        statement.close();
 
                                         String message;
                                         if (args.size() > 3)
@@ -53,8 +51,7 @@ public class TwitchCommands
                                             String defaultSQL = "SELECT Entry FROM DiscordDB.Utils WHERE EntryID = ?";
                                             List<Object> defaultParams = new ArrayList<>();
                                             defaultParams.add(6);
-                                            PreparedStatement defaultStatement = JDBCConnection.getStatement(defaultSQL, defaultParams);
-                                            ResultSet defaultSet = defaultStatement.executeQuery();
+                                            ResultSet defaultSet = JDBCConnection.getStatement(defaultSQL, defaultParams).executeQuery();
                                             if (defaultSet == null)
                                                 return;
                                             else if (defaultSet.next())
@@ -63,16 +60,12 @@ public class TwitchCommands
                                             }
                                             else
                                             {
-                                                defaultStatement.close();
                                                 return;
                                             }
-                                            defaultStatement.close();
                                         }
                                         params.add(message);
 
-                                        statement = JDBCConnection.getStatement(sql, params);
-                                        statement.executeUpdate();
-                                        statement.close();
+                                        JDBCConnection.getStatement(sql, params).executeUpdate();
 
                                         BotUtils.sendMessage(event.getChannel(), "Stream notification for " + args.get(1) + " added!");
                                 }
@@ -97,24 +90,19 @@ public class TwitchCommands
                                         List<Object> params = new ArrayList<>();
                                         params.add(event.getGuild().getLongID());
                                         params.add(TwitchUtils.getTwitchClient().getChannelEndpoint().getChannel(args.get(1)).getId());
-                                        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                        ResultSet set = statement.executeQuery();
+                                        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
                                         if (set == null)
                                             return;
                                         else if (set.next())
                                         {
-                                            statement.close();
                                             sql = "UPDATE DiscordDB.TwitchLive SET ChannelID = ? WHERE GuildID = ? AND TwitchID = ?";
                                             params.add(0, c);
-                                            statement = JDBCConnection.getStatement(sql, params);
-                                            statement.executeUpdate();
-                                            statement.close();
+                                            JDBCConnection.getStatement(sql, params).executeUpdate();
                                         }
                                         else
                                         {
                                             BotUtils.sendMessage(event.getChannel(), "This twitch user does not have a notification yet! Add one with the command `" + BotUtils.BOT_PREFIX + "twitch add`");
-                                            statement.close();
                                             return;
                                         }
                                     }
@@ -141,25 +129,20 @@ public class TwitchCommands
                                     List<Object> params = new ArrayList<>();
                                     params.add(event.getGuild().getLongID());
                                     params.add(TwitchUtils.getTwitchClient().getChannelEndpoint().getChannel(args.get(1)).getId());
-                                    PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                    ResultSet set = statement.executeQuery();
+                                    ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
                                     if (set == null)
                                         return;
                                     else if (set.next())
                                     {
-                                        statement.close();
                                         String message = BotUtils.combineArgs(args, 2);
                                         sql = "UPDATE DiscordDB.TwitchLive SET Message = ? WHERE GuildID = ? AND TwitchID = ?";
                                         params.add(0, message);
-                                        statement = JDBCConnection.getStatement(sql, params);
-                                        statement.executeUpdate();
-                                        statement.close();
+                                        JDBCConnection.getStatement(sql, params).executeUpdate();
                                     }
                                     else
                                     {
                                         BotUtils.sendMessage(event.getChannel(), "This twitch user does not have a notification yet! Add one with the command `" + BotUtils.BOT_PREFIX + "twitch add`");
-                                        statement.close();
                                         return;
                                     }
                                 }
@@ -185,8 +168,7 @@ public class TwitchCommands
                                     List<Object> params = new ArrayList<>();
                                     params.add(event.getGuild().getLongID());
                                     params.add(TwitchUtils.getTwitchClient().getChannelEndpoint().getChannel(args.get(1)).getId());
-                                    PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                    int num = statement.executeUpdate();
+                                    int num = JDBCConnection.getStatement(sql, params).executeUpdate();
                                     if (num >= 1)
                                     {
                                         BotUtils.sendMessage(event.getChannel(), "Notifications for " + args.get(1) + " removed.");

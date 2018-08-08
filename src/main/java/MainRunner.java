@@ -1,7 +1,6 @@
 import sx.blah.discord.api.IDiscordClient;
 
 import java.io.Console;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -36,8 +35,7 @@ public class MainRunner
             JDBCConnection.connect();
             String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Manaphy Token'";
             List<Object> params = new ArrayList<>();
-            PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-            ResultSet set = statement.executeQuery();
+            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
             if (set == null)
                 return;
             else if (set.next())
@@ -47,10 +45,8 @@ public class MainRunner
             else
             {
                 System.out.println("No valid token entry");
-                statement.close();
                 return;
             }
-            statement.close();
             JDBCConnection.disconnect();
 
             BotUtils.setPassHash(passToHash);

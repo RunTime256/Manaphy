@@ -83,5 +83,6 @@
     <orderEntry type="library" name="Maven: org.projectlombok:lombok:1.18.0" level="project" />
     <orderEntry type="library" name="Maven: org.knowm.xchart:xchart:3.5.2" level="project" />
     <orderEntry type="library" name="Maven: de.erichseifert.vectorgraphics2d:VectorGraphics2D:0.13" level="project" />
+    <orderEntry type="library" name="Maven: com.univocity:univocity-parsers:2.7.2" level="project" />
   </component>
 </module>

@@ -31,8 +31,8 @@ public class AccessLevel
     //Checks if the requester level is less than the command level
     //(i.e. Admin is 3, which is less than Moderator (4),
     // so Admins can run Moderator commands)
-    public boolean hasAccess(int request)
+    public boolean isAccessible(int request)
     {
-        return level >= request;
+        return request <= level;
     }
 }

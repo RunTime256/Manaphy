@@ -198,6 +198,32 @@ class BotUtils
         return false;
     }
 
+    public static String[] separateTag(String text)
+    {
+        String[] temp = new String[2];
+        if (text.length() > 5 && text.substring(text.length() - 5, text.length() - 4).equals("#"))
+        {
+            try
+            {
+                String t = text.substring(text.length() - 4);
+                Integer.parseInt(t);
+                temp[0] = text.substring(0, text.length() - 5);
+                temp[1] = t;
+            }
+            catch (NumberFormatException e)
+            {
+                temp[0] = text;
+                temp[1] = "";
+            }
+        }
+        else
+        {
+            temp[0] = text;
+            temp[1] = "";
+        }
+        return temp;
+    }
+
     //Returns the user's id, or -1 if it is not correct
     public static long getID(String text)
     {

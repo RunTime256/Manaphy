@@ -1,9 +1,11 @@
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
+import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.obj.ActivityType;
 import sx.blah.discord.handle.obj.StatusType;
 
+import java.sql.ResultSet;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +16,6 @@ public class CommandHandler
 {
     private Map<String, Command> commands;
     private Map<String, Command> hiddenCommands;
-    public final int NEW_GUILD_MESSAGE_ID = 1;
 
     public CommandHandler()
     {
@@ -52,53 +53,43 @@ public class CommandHandler
 
     //Sends a welcome message upon joining a new server
 
-    /*
     @EventSubscriber
     public void OnGuildCreate(GuildCreateEvent event)
     {
         try
         {
+            JDBCConnection.connect();
             String sql;
             List<Object> params = new ArrayList<>();
             sql = "SELECT * FROM DiscordDB.Guilds WHERE GuildID = ?";
             params.add(event.getGuild().getLongID());
-            PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-            ResultSet set = statement.executeQuery();
+            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
             if (!set.next())
             {
                 //Insert guild into table
-                statement.close();
-                sql = "INSERT INTO DiscordDB.Guilds VALUES(?)";
-                params = new ArrayList<>();
+                sql = "INSERT INTO DiscordDB.Guilds (GuildID) VALUES (?)";
+                params.clear();
                 params.add(event.getGuild().getLongID());
-                statement = JDBCConnection.getStatement(sql, params);
-                statement.executeUpdate();
+                JDBCConnection.getStatement(sql, params).executeUpdate();
 
                 //Send new guild message to guild owner
-                sql = "SELECT DiscordDB.EntryDescription FROM MessageEntry WHERE EntryID = ?";
-                params = new ArrayList<>();
-                params.add(NEW_GUILD_MESSAGE_ID);
-                statement = JDBCConnection.getStatement(sql, params);
-                set = statement.executeQuery();
+                sql = "SELECT DiscordDB.EntryDescription FROM MessageEntry WHERE EntryDesc = 'Guild Join Message'";
+                params.clear();
+                set = JDBCConnection.getStatement(sql, params).executeQuery();
                 if (set.next())
                 {
-                    String message = set.getString("EntryDescription");
-                    IChannel channel = event.getGuild().getOwner().getOrCreatePMChannel();
-                    BotUtils.sendMessage(channel, message);
+                    BotUtils.sendMessage(event.getGuild().getOwner().getOrCreatePMChannel(), set.getString("EntryDescription"));
                 }
-                statement.close();
             }
-            statement.close();
+            JDBCConnection.disconnect();
         }
-        catch (SQLException e)
+        catch (Exception e)
         {
-            System.out.println("Couldn't process Result Set");
             e.printStackTrace();
             return;
         }
     }
-    */
 
 
     //Performs a command if the message received triggers one
@@ -107,9 +98,8 @@ public class CommandHandler
     {
         String message = event.getMessage().getContent();
         String[] args = message.split(" ");
-        int numArgs = args.length - 1;
 
-        if (numArgs == -1)
+        if (args.length == 0)
         {
             return;
         }
