@@ -2,6 +2,7 @@ import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.handle.impl.events.ReadyEvent;
 import sx.blah.discord.handle.impl.events.guild.GuildCreateEvent;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
+import sx.blah.discord.handle.impl.events.guild.member.UserJoinEvent;
 import sx.blah.discord.handle.obj.ActivityType;
 import sx.blah.discord.handle.obj.StatusType;
 
@@ -51,10 +52,48 @@ public class CommandHandler
 
     }
 
+    @EventSubscriber
+    public void onUserJoin(UserJoinEvent event)
+    {
+        try
+        {
+            JDBCConnection.connect();
+            String sql;
+            List<Object> params = new ArrayList<>();
+            sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Auto = true";
+            params.add(event.getGuild().getLongID());
+            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+
+            while (set.next())
+            {
+                event.getUser().addRole(event.getGuild().getRoleByID(set.getLong("RoleID")));
+                boolean x = true;
+                do
+                {
+                    try
+                    {
+                        Thread.sleep(250);
+                        x = false;
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
+                }
+                while (x);
+            }
+            JDBCConnection.disconnect();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            return;
+        }
+    }
+
     //Sends a welcome message upon joining a new server
 
     @EventSubscriber
-    public void OnGuildCreate(GuildCreateEvent event)
+    public void onGuildCreate(GuildCreateEvent event)
     {
         try
         {
@@ -94,7 +133,7 @@ public class CommandHandler
 
     //Performs a command if the message received triggers one
     @EventSubscriber
-    public void OnMessageReceived(MessageReceivedEvent event)
+    public void onMessageReceived(MessageReceivedEvent event)
     {
         String message = event.getMessage().getContent();
         String[] args = message.split(" ");

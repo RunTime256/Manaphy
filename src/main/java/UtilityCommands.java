@@ -88,7 +88,7 @@ public class UtilityCommands
                 else
                     builder.appendField("Roles", "None", false);
 
-                builder.withColor(roles.get(0).getColor());
+                builder.withColor(event.getAuthor().getColorForGuild(event.getGuild()));
             }
 
             builder.withTitle(user.getName() + "#" + user.getDiscriminator());
@@ -98,10 +98,17 @@ public class UtilityCommands
 
         map.put("role", new Command("role", "Add or remove a role", BotUtils.BOT_PREFIX + "role", AccessLevel.EVERYONE, new Command[]
                 {
-                        new Command("set", "Sets a selectable role to be added with a code. Code cannot have spaces", "set <role id> <role code>", AccessLevel.MOD, ((event, args) ->
+                        new Command("set", "Sets a selectable role to be added with a code. Code cannot have spaces. Add auto to have the role added upon join.", "set [auto] <role id> <role code>", AccessLevel.MOD, ((event, args) ->
                         {
-                            if (event.getGuild() != null && args.size() == 3)
+                            if (event.getGuild() != null && args.size() == 3 || args.size() == 4)
                             {
+                                boolean auto = false;
+                                if (args.size() == 4 && args.get(1).equals("auto"))
+                                {
+                                    args.remove(1);
+                                    auto = true;
+                                }
+
                                 long id = BotUtils.getID(args.get(1));
                                 IRole role = event.getGuild().getRoleByID(id);
                                 if (role == null)
@@ -135,13 +142,21 @@ public class UtilityCommands
                                 set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 if (set.next())
                                 {
+                                    if (auto)
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "You cannot set a requestable role as automatic.");
+                                        return;
+                                    }
                                     sql = "UPDATE DiscordDB.Roles SET Code = ? WHERE GuildID = ? AND RoleID = ?";
                                     params.add(0, args.get(2));
                                     JDBCConnection.getStatement(sql, params).executeUpdate();
                                 }
                                 else
                                 {
-                                    sql = "INSERT INTO DiscordDB.Roles (GuildID, RoleID, Code) VALUES (?, ?, ?)";
+                                    if (auto)
+                                        sql = "INSERT INTO DiscordDB.Roles (GuildID, RoleID, Code, Auto) VALUES (?, ?, ?, true)";
+                                    else
+                                        sql = "INSERT INTO DiscordDB.Roles (GuildID, RoleID, Code, Auto) VALUES (?, ?, ?, false)";
                                     params.add(args.get(2));
                                     JDBCConnection.getStatement(sql, params).executeUpdate();
                                 }
@@ -166,7 +181,7 @@ public class UtilityCommands
                         {
                             if (event.getGuild() != null && args.size() == 2)
                             {
-                                String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ?";
+                                String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ? AND Auto is false";
                                 List<Object> params = new ArrayList<>();
                                 params.add(event.getGuild().getLongID());
                                 params.add(args.get(1));
@@ -175,11 +190,17 @@ public class UtilityCommands
                                 {
                                     long id = set.getLong("RoleID");
                                     IRole role = event.getGuild().getRoleByID(id);
+                                    if (role != null && event.getAuthor().hasRole(role))
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "You already have this role.");
+                                        return;
+                                    }
+
                                     List<IChannel> channels = event.getGuild().getChannels();
                                     for (int i = 0; i < channels.size(); i++)
                                     {
                                         IChannel channel = channels.get(i);
-                                        if (channel.isNSFW() && channel.getRoleOverrides().get(id).allow().contains(Permissions.READ_MESSAGES))
+                                        if (channel.isNSFW() && channel.getRoleOverrides().get(id) != null && channel.getRoleOverrides().get(id).allow().contains(Permissions.READ_MESSAGES))
                                         {
                                             IMessage message = BotUtils.sendMessage(event.getChannel(), "This role grants access to NSFW channels. Do you still wish to add it?");
                                             message.addReaction(ReactionEmoji.of(YES));
@@ -235,7 +256,7 @@ public class UtilityCommands
                         {
                             if (event.getGuild() != null && args.size() == 2)
                             {
-                                String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ?";
+                                String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ? AND Auto is false";
                                 List<Object> params = new ArrayList<>();
                                 params.add(event.getGuild().getLongID());
                                 params.add(args.get(1));
@@ -244,6 +265,11 @@ public class UtilityCommands
                                 {
                                     long id = set.getLong("RoleID");
                                     IRole role = event.getGuild().getRoleByID(id);
+                                    if (role != null && !event.getAuthor().hasRole(role))
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "You do not have this role.");
+                                        return;
+                                    }
                                     if (role != null)
                                     {
                                         event.getAuthor().removeRole(role);
@@ -265,7 +291,7 @@ public class UtilityCommands
                         {
                             if (event.getGuild() != null && args.size() == 1)
                             {
-                                String sql = "SELECT RoleID, Code FROM DiscordDB.Roles WHERE GuildID = ?";
+                                String sql = "SELECT RoleID, Code, Auto FROM DiscordDB.Roles WHERE GuildID = ?";
                                 List<Object> params = new ArrayList<>();
                                 params.add(event.getGuild().getLongID());
                                 ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
@@ -278,13 +304,17 @@ public class UtilityCommands
                                     while (set.next())
                                     {
                                         IRole role = event.getGuild().getRoleByID(set.getLong("RoleID"));
+                                        boolean auto = set.getBoolean("Auto");
+                                        String title = set.getString("Code");
+                                        if (auto)
+                                            title = "[auto] " + title;
                                         if (role == null)
                                         {
-                                            builder.appendField("Invalid Role", set.getString("Code"), true);
+                                            builder.appendField(title, "Invalid Role", true);
                                         }
                                         else
                                         {
-                                            builder.appendField(set.getString("Code"), role.mention(),true);
+                                            builder.appendField(title, role.mention(),true);
                                         }
                                     }
                                 }
@@ -343,7 +373,7 @@ public class UtilityCommands
                             builder.withTitle(guild.getName());
                             builder.withThumbnail(guild.getIconURL());
                             builder.withColor(BotUtils.DEFAULT_COLOR);
-                            builder.appendField("Owner", guild.getOwner().getName(), true);
+                            builder.appendField("Owner", guild.getOwner().getName() + "#" + guild.getOwner().getDiscriminator(), true);
                             builder.appendField("ID", "" + guild.getLongID(), true);
                             builder.appendField("Creation Date", BotUtils.formatDate(guild.getCreationDate()), true);
                             builder.appendField("Members", "" + guild.getTotalMemberCount(), true);
@@ -541,7 +571,7 @@ public class UtilityCommands
                                 else
                                     builder.appendField("Roles", "None", false);
 
-                                builder.withColor(roles.get(0).getColor());
+                                builder.withColor(event.getAuthor().getColorForGuild(event.getGuild()));
                             }
 
                             builder.withTitle(user.getName() + "#" + user.getDiscriminator());
