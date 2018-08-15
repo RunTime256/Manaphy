@@ -11,7 +11,7 @@ public class HelpCommands
 {
     public HelpCommands(Map<String, Command> map)
     {
-        map.put("help", new Command("help", "Lists all available commands and what they do", BotUtils.BOT_PREFIX + "help [command]", AccessLevel.EVERYONE, (event, args) ->
+        map.put("help", new Command("help", "Lists all available commands and what they do", BotUtils.BOT_PREFIX + "help [command]", AccessLevel.EVERYONE, false, (event, args) ->
         {
             IChannel channel = event.getChannel();
             EmbedBuilder builder = new EmbedBuilder();
@@ -85,7 +85,7 @@ public class HelpCommands
             while (iter.hasNext())
             {
                 Command c = iter.next();
-                if (c.getAccess().isAccessible(accessLevel))
+                if (c.getAccess().isAccessible(accessLevel) && !(event.getGuild() != null && c.getDM()))
                 {
                     builder.appendField(c.getSyntax(), c.getDescription(), b);
                     b = true;

@@ -12,6 +12,7 @@ public class Command
     private String name;
     private String description;
     private String syntax;
+    private boolean dm;
     private AccessLevel access;
     private Map<String, Command> subComms;
     private CommandExecutor execute;
@@ -28,7 +29,7 @@ public class Command
     public static final String EVENT = "Event";
 
     //Create a standard command
-    public Command(String n, String d, String x, AccessLevel a, CommandExecutor e)
+    public Command(String n, String d, String x, AccessLevel a, boolean m, CommandExecutor e)
     {
         name = n;
         description = d;
@@ -36,10 +37,11 @@ public class Command
         access = a;
         subComms = new HashMap<>();
         execute = e;
+        dm = m;
     }
 
     //Create a command with an array of sub-commands
-    public Command(String n, String d, String x, AccessLevel a, Command[] s, CommandExecutor e)
+    public Command(String n, String d, String x, AccessLevel a, boolean m, Command[] s, CommandExecutor e)
     {
         name = n;
         description = d;
@@ -52,6 +54,7 @@ public class Command
             subComms.put(s[i].getName(), s[i]);
         }
         execute = e;
+        dm = m;
     }
 
     public String getName()
@@ -69,6 +72,11 @@ public class Command
         return syntax;
     }
 
+    public boolean getDM()
+    {
+        return dm;
+    }
+
     public AccessLevel getAccess()
     {
         return access;
@@ -82,6 +90,8 @@ public class Command
     //Executes the command
     public void execute(MessageReceivedEvent event, List<String> argsList) throws SQLException
     {
+        if (event.getGuild() != null && dm)
+            return;
         JDBCConnection.connect();
         String sql;
         List<Object> params = new ArrayList<>();

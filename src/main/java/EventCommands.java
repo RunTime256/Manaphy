@@ -16,12 +16,12 @@ public class EventCommands
     public EventCommands(Map<String, Command> map)
     {
         //Commands for league betting in Pokemon discord
-        map.put("league", new Command("league", "Activities for the Mod League", BotUtils.BOT_PREFIX + "league", AccessLevel.DEACTIVATED, new Command[]
+        map.put("league", new Command("league", "Activities for the Mod League", BotUtils.BOT_PREFIX + "league", AccessLevel.DEACTIVATED, true, new Command[]
                 {
                         //Sub-command to bet
-                        new Command("bet", "Bet on a placing (1st, 2nd, or 3rd) for the Mod League Champion Tournament (Use ", "bet <place> <user code>", AccessLevel.DEACTIVATED, ((event, args) ->
+                        new Command("bet", "Bet on a placing (1st, 2nd, or 3rd) for the Mod League Champion Tournament (Use ", "bet <place> <user code>", AccessLevel.DEACTIVATED, true, ((event, args) ->
                         {
-                            if (event.getGuild() == null && BotUtils.isPokemon(event))
+                            if (BotUtils.isPokemon(event))
                             {
                                 if (args.size() == 3)
                                 {
@@ -39,32 +39,27 @@ public class EventCommands
                                                 String sql = "SELECT Username FROM DiscordDB.LeagueChampions WHERE Code = ?";
                                                 List<Object> params = new ArrayList<>();
                                                 params.add(code);
-                                                PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                                ResultSet set = statement.executeQuery();
+                                                ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set == null)
                                                     return;
                                                 else if (set.next())
                                                 {
                                                     name = set.getString("Username");
-                                                }
-                                                else
+                                                } else
                                                 {
                                                     BotUtils.sendMessage(event.getChannel(), "Invalid user code. Use `" + BotUtils.BOT_PREFIX + "league list` to view Champions and their codes");
-                                                    statement.close();
                                                     return;
                                                 }
-                                                statement.close();
 
                                                 //Checks if there is already a bet for the current placing
                                                 sql = "SELECT * FROM DiscordDB.LeagueBet WHERE UserID = ? AND Place = ?";
                                                 params = new ArrayList<>();
                                                 params.add(event.getAuthor().getLongID());
                                                 params.add(place);
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set == null)
                                                     return;
-                                                //If there is a bet, update it
+                                                    //If there is a bet, update it
                                                 else if (set.next())
                                                 {
                                                     sql = "UPDATE DiscordDB.LeagueBet SET Code = ? WHERE UserID = ? AND Place = ?";
@@ -76,12 +71,9 @@ public class EventCommands
                                                     sql = "INSERT INTO DiscordDB.LeagueBet (UserId, Place, Code) VALUES(?, ?, ?)";
                                                     params.add(code);
                                                 }
-                                                statement.close();
 
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                statement.executeUpdate();
-                                            }
-                                            catch (SQLException e)
+                                                JDBCConnection.getStatement(sql, params).executeUpdate();
+                                            } catch (SQLException e)
                                             {
                                                 System.out.println("Couldn't process result set");
                                                 e.printStackTrace();
@@ -95,31 +87,26 @@ public class EventCommands
                                             {
                                                 emoji = ":first_place:";
                                                 num = "1st";
-                                            }
-                                            else if (place == 2)
+                                            } else if (place == 2)
                                             {
                                                 emoji = ":second_place:";
                                                 num = "2nd";
-                                            }
-                                            else if (place == 3)
+                                            } else if (place == 3)
                                             {
                                                 emoji = ":third_place:";
                                                 num = "3rd";
                                             }
                                             String response = "You have chosen " + name + " to place " + num + " in the Mod League Champion Tournament. " + emoji;
                                             BotUtils.sendMessage(event.getChannel(), response);
-                                        }
-                                        else
+                                        } else
                                         {
                                             BotUtils.help(map, event, args, "league");
                                         }
-                                    }
-                                    catch (NumberFormatException e)
+                                    } catch (NumberFormatException e)
                                     {
                                         BotUtils.help(map, event, args, "league");
                                     }
-                                }
-                                else
+                                } else
                                 {
                                     BotUtils.help(map, event, args, "league");
                                 }
@@ -127,17 +114,16 @@ public class EventCommands
                         })),
 
                         //Sub-command to list all champions
-                        new Command("list", "List the users to bet on for the Mod League Champion Tournament", "list", AccessLevel.DEACTIVATED, ((event, args) ->
+                        new Command("list", "List the users to bet on for the Mod League Champion Tournament", "list", AccessLevel.DEACTIVATED, true, ((event, args) ->
                         {
-                            if (event.getGuild() == null && BotUtils.isPokemon(event))
+                            if (BotUtils.isPokemon(event))
                             {
                                 try
                                 {
                                     //Select and all champions and codes
                                     String sql = "SELECT Username, Code FROM DiscordDB.LeagueChampions";
                                     List<Object> params = new ArrayList<>();
-                                    PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                    ResultSet set = statement.executeQuery();
+                                    ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     String message = "The current Mod League Champions that will compete are:\n\n";
 
                                     if (set == null)
@@ -150,16 +136,13 @@ public class EventCommands
                                         {
                                             message += ":small_orange_diamond: " + set.getString("Username") + " (" + set.getString("Code") + ")" + "\n";
                                         }
-                                    }
-                                    else
+                                    } else
                                     {
                                         message += "`There are currently no champions to select`";
                                     }
-                                    statement.close();
 
                                     BotUtils.sendMessage(event.getChannel(), message);
-                                }
-                                catch (SQLException e)
+                                } catch (SQLException e)
                                 {
                                     System.out.println("Couldn't process result set");
                                     e.printStackTrace();
@@ -169,9 +152,9 @@ public class EventCommands
                         })),
 
                         //List current bets for the current user
-                        new Command("my_bets", "List your bets for the Mod League Champion Tournament", "my_bets", AccessLevel.DEACTIVATED, ((event, args) ->
+                        new Command("my_bets", "List your bets for the Mod League Champion Tournament", "my_bets", AccessLevel.DEACTIVATED, true, ((event, args) ->
                         {
-                            if (event.getGuild() == null && BotUtils.isPokemon(event))
+                            if (BotUtils.isPokemon(event))
                             {
                                 try
                                 {
@@ -179,8 +162,7 @@ public class EventCommands
                                     String sql = "SELECT Place, Code FROM DiscordDB.LeagueBet WHERE UserID = ? ORDER BY Place ASC";
                                     List<Object> params = new ArrayList<>();
                                     params.add(event.getAuthor().getLongID());
-                                    PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                    ResultSet set = statement.executeQuery();
+                                    ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     String message = "Your bets for the Mod League Champions are:\n\n";
                                     params.remove(0);
 
@@ -191,39 +173,31 @@ public class EventCommands
                                         //Select names for each place
                                         sql = "SELECT Username FROM DiscordDB.LeagueChampions WHERE Code = ?";
                                         params.add(set.getString("Code"));
-                                        PreparedStatement userStatement = JDBCConnection.getStatement(sql, params);
-                                        ResultSet userSet = userStatement.executeQuery();
+                                        ResultSet userSet = JDBCConnection.getStatement(sql, params).executeQuery();
                                         userSet.next();
                                         message += get_medal(set.getInt("Place")) + " " + userSet.getString("Username");
-                                        userStatement.close();
                                         if (set.next())
                                         {
                                             sql = "SELECT Username FROM DiscordDB.LeagueChampions WHERE Code = ?";
                                             params.remove(0);
                                             params.add(set.getString("Code"));
-                                            userStatement = JDBCConnection.getStatement(sql, params);
-                                            userSet = userStatement.executeQuery();
+                                            userSet = JDBCConnection.getStatement(sql, params).executeQuery();
                                             userSet.next();
                                             message += "\n" + get_medal(set.getInt("Place")) + " " + userSet.getString("Username");
-                                            userStatement.close();
                                             if (set.next())
                                             {
                                                 sql = "SELECT Username FROM DiscordDB.LeagueChampions WHERE Code = ?";
                                                 params.remove(0);
                                                 params.add(set.getString("Code"));
-                                                userStatement = JDBCConnection.getStatement(sql, params);
-                                                userSet = userStatement.executeQuery();
+                                                userSet = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 userSet.next();
                                                 message += "\n" + get_medal(set.getInt("Place")) + " " + userSet.getString("Username");
-                                                userStatement.close();
                                             }
                                         }
-                                    }
-                                    else
+                                    } else
                                     {
                                         message += "`No current bets`";
                                     }
-                                    statement.close();
 
                                     BotUtils.sendMessage(event.getChannel(), message);
                                 } catch (SQLException e)
@@ -236,17 +210,16 @@ public class EventCommands
                         })),
 
                         //List all bets for all users (moderation purposes)
-                        new Command("all_bets", "List all bets for the Mod League Champion Tournament", "all_bets", AccessLevel.DEACTIVATED, ((event, args) ->
+                        new Command("all_bets", "List all bets for the Mod League Champion Tournament", "all_bets", AccessLevel.DEACTIVATED, true, ((event, args) ->
                         {
-                            if (event.getGuild() == null && BotUtils.isPokemon(event))
+                            if (BotUtils.isPokemon(event))
                             {
                                 try
                                 {
                                     //Select all info and sort them
                                     String sql = "SELECT UserID, Place, Code FROM DiscordDB.LeagueBet ORDER BY UserID ASC, Place ASC";
                                     List<Object> params = new ArrayList<>();
-                                    PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                    ResultSet set = statement.executeQuery();
+                                    ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     String message = "The bets for the Mod League Champions are:\n";
 
                                     if (set == null)
@@ -260,19 +233,15 @@ public class EventCommands
                                             //Select username for current code
                                             sql = "SELECT Username FROM DiscordDB.LeagueChampions WHERE Code = ?";
                                             params.add(set.getString("Code"));
-                                            PreparedStatement userStatement = JDBCConnection.getStatement(sql, params);
-                                            ResultSet userSet = userStatement.executeQuery();
+                                            ResultSet userSet = JDBCConnection.getStatement(sql, params).executeQuery();
                                             params.remove(0);
                                             userSet.next();
                                             message += "\n" + set.getLong("UserID") + ": " + set.getInt("Place") + " " + userSet.getString("Username");
-                                            userStatement.close();
                                         }
-                                    }
-                                    else
+                                    } else
                                     {
                                         message += "`No bets`";
                                     }
-                                    statement.close();
 
                                     BotUtils.sendMessage(event.getChannel(), message);
                                 } catch (SQLException e)
@@ -287,10 +256,7 @@ public class EventCommands
 
                 (event, args) ->
                 {
-                    if (BotUtils.isPokemon(event) && Command.hasChannelPerms(event, Command.EVENT, "league"))
-                    {
-                        BotUtils.help(map, event, args, "league");
-                    }
+                    BotUtils.help(map, event, args, "league");
                 })
         );
     }

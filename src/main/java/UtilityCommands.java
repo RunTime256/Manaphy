@@ -19,7 +19,7 @@ public class UtilityCommands
     public UtilityCommands(Map<String, Command> map)
     {
         //Give user info
-        map.put("userinfo", new Command("userinfo", "Gathers the requester's info", BotUtils.BOT_PREFIX + "userinfo [@user]", AccessLevel.EVERYONE, (event, args) ->
+        map.put("userinfo", new Command("userinfo", "Gathers the requester's info", BotUtils.BOT_PREFIX + "userinfo [@user]", AccessLevel.EVERYONE, false, (event, args) ->
         {
             EmbedBuilder builder = new EmbedBuilder();
             IUser user;
@@ -96,11 +96,11 @@ public class UtilityCommands
             BotUtils.sendMessage(event.getChannel(), builder.build());
         }));
 
-        map.put("role", new Command("role", "Add or remove a role", BotUtils.BOT_PREFIX + "role", AccessLevel.EVERYONE, new Command[]
+        map.put("role", new Command("role", "Add or remove a role", BotUtils.BOT_PREFIX + "role", AccessLevel.EVERYONE, false, new Command[]
                 {
-                        new Command("set", "Sets a selectable role to be added with a code. Code cannot have spaces. Add auto to have the role added upon join.", "set [auto] <role id> <role code>", AccessLevel.MOD, ((event, args) ->
+                        new Command("set", "Sets a selectable role to be added with a code. Code cannot have spaces. Add auto to have the role added upon join.", "set [auto] <role id> <role code>", AccessLevel.MOD, false, ((event, args) ->
                         {
-                            if (event.getGuild() != null && args.size() == 3 || args.size() == 4)
+                            if (event.getGuild() != null && (args.size() == 3 || args.size() == 4))
                             {
                                 boolean auto = false;
                                 if (args.size() == 4 && args.get(1).equals("auto"))
@@ -164,7 +164,7 @@ public class UtilityCommands
                             }
                         })),
 
-                        new Command("delete", "Deletes a selectable role, no longer making it selectable", "delete <role code>", AccessLevel.MOD, ((event, args) ->
+                        new Command("delete", "Deletes a selectable role, no longer making it selectable", "delete <role code>", AccessLevel.MOD, false, ((event, args) ->
                         {
                             if (event.getGuild() != null && args.size() == 2)
                             {
@@ -177,7 +177,7 @@ public class UtilityCommands
                             }
                         })),
 
-                        new Command("add", "Adds a role", "add <role>", AccessLevel.EVERYONE, ((event, args) ->
+                        new Command("add", "Adds a role", "add <role>", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
                             if (event.getGuild() != null && args.size() == 2)
                             {
@@ -252,7 +252,7 @@ public class UtilityCommands
                             }
                         })),
 
-                        new Command("remove", "Removes a role", "remove <role>", AccessLevel.EVERYONE, ((event, args) ->
+                        new Command("remove", "Removes a role", "remove <role>", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
                             if (event.getGuild() != null && args.size() == 2)
                             {
@@ -287,7 +287,7 @@ public class UtilityCommands
                             }
                         })),
 
-                        new Command("list", "List requestable roles", "list", AccessLevel.EVERYONE, ((event, args) ->
+                        new Command("list", "List requestable roles", "list", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
                             if (event.getGuild() != null && args.size() == 1)
                             {
@@ -332,9 +332,9 @@ public class UtilityCommands
                 })
         );
 
-        map.put("get", new Command("get", "Get info", BotUtils.BOT_PREFIX + "get", AccessLevel.EVERYONE, new Command[]
+        map.put("get", new Command("get", "Get info", BotUtils.BOT_PREFIX + "get", AccessLevel.EVERYONE, false, new Command[]
                 {
-                        new Command("guild", "Guild info", "guild [id/name]", AccessLevel.EVERYONE, ((event, args) ->
+                        new Command("guild", "Guild info", "guild [id/name]", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
                             IGuild guild;
                             if (args.size() >= 2)
@@ -381,7 +381,7 @@ public class UtilityCommands
                             BotUtils.sendMessage(event.getChannel(), builder.build());
                         })),
 
-                        new Command("role", "Role info", "role <id/name>", AccessLevel.EVERYONE, ((event, args) ->
+                        new Command("role", "Role info", "role <id/name>", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
                             IRole role = null;
                             IGuild guild = event.getGuild();
@@ -435,7 +435,7 @@ public class UtilityCommands
                             }
                         })),
 
-                        new Command("channel", "Channel info", "channel [id/name]", AccessLevel.EVERYONE, ((event, args) ->
+                        new Command("channel", "Channel info", "channel [id/name]", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
                             IChannel channel = null;
                             IGuild guild = event.getGuild();
@@ -489,7 +489,7 @@ public class UtilityCommands
                             BotUtils.sendMessage(event.getChannel(), builder.build());
                         })),
 
-                        new Command("user", "User info", "user [id/name]", AccessLevel.EVERYONE, ((event, args) ->
+                        new Command("user", "User info", "user [id/name]", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
                             IUser user = null;
                             IGuild guild = null;
