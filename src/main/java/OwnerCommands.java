@@ -2,8 +2,10 @@ import java.util.Map;
 
 public class OwnerCommands
 {
-    public OwnerCommands(Map<String, Command> map)
+    private String prefix;
+    public OwnerCommands(Map<String, Command> map, String p)
     {
+        prefix = p;
         //No current commands
     }
 }

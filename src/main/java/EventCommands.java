@@ -1,9 +1,3 @@
-import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
-import sx.blah.discord.handle.impl.obj.ReactionEmoji;
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.util.EmbedBuilder;
-
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -12,11 +6,13 @@ import java.util.Map;
 
 public class EventCommands
 {
+    private String prefix;
 
-    public EventCommands(Map<String, Command> map)
+    public EventCommands(Map<String, Command> map, String p)
     {
+        prefix = p;
         //Commands for league betting in Pokemon discord
-        map.put("league", new Command("league", "Activities for the Mod League", BotUtils.BOT_PREFIX + "league", AccessLevel.DEACTIVATED, true, new Command[]
+        map.put("league", new Command("league", "Activities for the Mod League", prefix + "league", AccessLevel.DEACTIVATED, true, new Command[]
                 {
                         //Sub-command to bet
                         new Command("bet", "Bet on a placing (1st, 2nd, or 3rd) for the Mod League Champion Tournament (Use ", "bet <place> <user code>", AccessLevel.DEACTIVATED, true, ((event, args) ->
@@ -47,7 +43,7 @@ public class EventCommands
                                                     name = set.getString("Username");
                                                 } else
                                                 {
-                                                    BotUtils.sendMessage(event.getChannel(), "Invalid user code. Use `" + BotUtils.BOT_PREFIX + "league list` to view Champions and their codes");
+                                                    BotUtils.sendMessage(event.getChannel(), "Invalid user code. Use `" + prefix + "league list` to view Champions and their codes");
                                                     return;
                                                 }
 

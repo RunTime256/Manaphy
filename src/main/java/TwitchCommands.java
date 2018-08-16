@@ -1,18 +1,17 @@
 import me.philippheuer.twitch4j.exceptions.ChannelDoesNotExistException;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class TwitchCommands
 {
-    public TwitchCommands(Map<String, Command> map)
+    private String prefix;
+    public TwitchCommands(Map<String, Command> map, String p)
     {
-        //Commands for league betting in Pokemon discord
-        map.put("twitch", new Command("twitch", "Twitch integration", BotUtils.BOT_PREFIX + "twitch", AccessLevel.MOD, false, new Command[]
+        prefix = p;
+        map.put("twitch", new Command("twitch", "Twitch integration", prefix + "twitch", AccessLevel.MOD, false, new Command[]
                 {
                         new Command("add", "Add a streamer to notify users when they are live. Stream link will be added automatically.", "add <twitch username> <channel> [message]", AccessLevel.MOD, false, ((event, args) ->
                         {
@@ -32,7 +31,7 @@ public class TwitchCommands
                                         return;
                                     else if (set.next())
                                     {
-                                        BotUtils.sendMessage(event.getChannel(), "This twitch user already has a notification set! Please use the command `" + BotUtils.BOT_PREFIX + "twitch update` to update their notification.");
+                                        BotUtils.sendMessage(event.getChannel(), "This twitch user already has a notification set! Please use the command `" + prefix + "twitch update` to update their notification.");
                                         return;
                                     }
                                     else
@@ -102,7 +101,7 @@ public class TwitchCommands
                                         }
                                         else
                                         {
-                                            BotUtils.sendMessage(event.getChannel(), "This twitch user does not have a notification yet! Add one with the command `" + BotUtils.BOT_PREFIX + "twitch add`");
+                                            BotUtils.sendMessage(event.getChannel(), "This twitch user does not have a notification yet! Add one with the command `" + prefix + "twitch add`");
                                             return;
                                         }
                                     }
@@ -142,7 +141,7 @@ public class TwitchCommands
                                     }
                                     else
                                     {
-                                        BotUtils.sendMessage(event.getChannel(), "This twitch user does not have a notification yet! Add one with the command `" + BotUtils.BOT_PREFIX + "twitch add`");
+                                        BotUtils.sendMessage(event.getChannel(), "This twitch user does not have a notification yet! Add one with the command `" + prefix + "twitch add`");
                                         return;
                                     }
                                 }

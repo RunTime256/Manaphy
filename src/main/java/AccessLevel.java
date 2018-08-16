@@ -7,7 +7,8 @@ public class AccessLevel
     public static final AccessLevel OWNER = new AccessLevel(2, "Owner");
     public static final AccessLevel ADMIN = new AccessLevel(3, "Admin");
     public static final AccessLevel MOD = new AccessLevel(4, "Moderator");
-    public static final AccessLevel EVERYONE = new AccessLevel(8, "Everyone");
+    public static final AccessLevel BOT = new AccessLevel(5, "Bot");
+    public static final AccessLevel EVERYONE = new AccessLevel(99, "Everyone");
 
     private int level;
     private String name;

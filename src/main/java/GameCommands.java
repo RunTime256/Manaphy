@@ -7,15 +7,17 @@ import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GameCommands
 {
@@ -28,8 +30,11 @@ public class GameCommands
     private final Emote[] RED_CUPS = {new Emote("r1", 469335015113752596L), new Emote("r2", 469335023712075776L), new Emote("r3", 469335032809390090L), new Emote("r4", 469335041017905165L)};
     private final Emote[] GREEN_CUPS = {new Emote("g1", 469334976274366474L), new Emote("g2", 469334987490197514L), new Emote("g3", 469334994985287681L), new Emote("g4", 469335004049047561L)};
     private final Color GREEN = new Color(1, 181, 83);
-    public GameCommands(Map<String, Command> map)
+    private String prefix;
+
+    public GameCommands(Map<String, Command> map, String p)
     {
+        prefix = p;
         //Create map to find codes and emojis
         stoneMap = new HashMap<>();
         emojiMap = new HashMap<>();
@@ -46,7 +51,7 @@ public class GameCommands
         emojiMap.put(EMOTES[4], PEGS[4]);
         emojiMap.put(EMOTES[5], PEGS[5]);
 
-        map.put("stones", new Command("stones", "Stones and Cups is a code-breaking game. Guess the stones in the correct order to win! You have 7 turns to guess.", BotUtils.BOT_PREFIX + "stones", AccessLevel.EVERYONE, true, new Command[]
+        map.put("stones", new Command("stones", "Stones and Cups is a code-breaking game. Guess the stones in the correct order to win! You have 7 turns to guess.", prefix + "stones", AccessLevel.EVERYONE, true, new Command[]
                 {
                         new Command("start", "Starts a game", "start", AccessLevel.EVERYONE, true, ((event, args) ->
                         {
@@ -58,8 +63,7 @@ public class GameCommands
                                 {
                                     String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Secret'";
                                     List<Object> params = new ArrayList<>();
-                                    PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                    ResultSet set = statement.executeQuery();
+                                    ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     if (set.next())
                                     {
                                         if (args.get(1).equals(set.getString("Entry")))
@@ -92,8 +96,7 @@ public class GameCommands
                                 String sql = "SELECT StartTime, EndTime, Streak, GameNumber FROM DiscordDB.Stones WHERE UserID = ? ORDER BY StartTime DESC LIMIT 1";
                                 List<Object> params = new ArrayList<>();
                                 params.add(event.getAuthor().getLongID());
-                                PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                ResultSet set = statement.executeQuery();
+                                ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 int gameNum = 1;
                                 int streak = 0;
 
@@ -149,13 +152,11 @@ public class GameCommands
                                 params.add(isEvent);
                                 params.add(streak);
                                 params.add(gameNum);
-                                statement = JDBCConnection.getStatement(sql, params);
-                                statement.executeUpdate();
+                                JDBCConnection.getStatement(sql, params).executeUpdate();
 
                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Start'";
                                 params.clear();
-                                statement = JDBCConnection.getStatement(sql, params);
-                                set = statement.executeQuery();
+                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 String phrase = "";
                                 if (set.next())
                                 {
@@ -174,8 +175,7 @@ public class GameCommands
                                 }
 
                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Image Guess'";
-                                statement = JDBCConnection.getStatement(sql, params);
-                                set = statement.executeQuery();
+                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 String url = "";
                                 if (set.next())
                                 {
@@ -200,8 +200,7 @@ public class GameCommands
                                 sql = "SELECT Streak FROM DiscordDB.Stones WHERE UserID = ? ORDER BY Streak DESC LIMIT 1";
                                 params.clear();
                                 params.add(event.getAuthor().getLongID());
-                                statement = JDBCConnection.getStatement(sql, params);
-                                set = statement.executeQuery();
+                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 int best = 0;
                                 if (set.next())
                                 {
@@ -218,7 +217,7 @@ public class GameCommands
                                 builder.withColor(GREEN);
                                 builder.appendField("Guessing Key", key, false);
                                 builder.appendField("Response Key", cups, false);
-                                builder.appendField("Guess Command", BotUtils.BOT_PREFIX + "stones g \uD83D\uDD25\uD83D\uDD25\uD83D\uDD25\uD83D\uDD25\t\tor\t\t" + BotUtils.BOT_PREFIX + "stones g FFFF", false);
+                                builder.appendField("Guess Command", prefix + "stones g \uD83D\uDD25\uD83D\uDD25\uD83D\uDD25\uD83D\uDD25\t\tor\t\t" + prefix + "stones g FFFF", false);
                                 builder.appendField("Current Streak", "" + streak, false);
                                 builder.appendField("Best Streak", "" + best, false);
 
@@ -237,8 +236,7 @@ public class GameCommands
                                 String sql = "SELECT Solution, GameNumber, EndTime FROM DiscordDB.Stones WHERE UserID = ? ORDER BY StartTime DESC LIMIT 1";
                                 List<Object> params = new ArrayList<>();
                                 params.add(event.getAuthor().getLongID());
-                                PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                ResultSet set = statement.executeQuery();
+                                ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
                                 if (set.next())
                                 {
@@ -249,8 +247,7 @@ public class GameCommands
                                         params.add(0, BotUtils.now());
                                         params.add(event.getAuthor().getLongID());
                                         params.add(set.getInt("GameNumber"));
-                                        statement = JDBCConnection.getStatement(sql, params);
-                                        statement.executeUpdate();
+                                        JDBCConnection.getStatement(sql, params).executeUpdate();
 
                                         String solution = set.getString("Solution");
                                         String message = "";
@@ -261,8 +258,7 @@ public class GameCommands
 
                                         sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Quit'";
                                         params.clear();
-                                        statement = JDBCConnection.getStatement(sql, params);
-                                        set = statement.executeQuery();
+                                        set = JDBCConnection.getStatement(sql, params).executeQuery();
                                         String phrase = "";
                                         if (set.next())
                                         {
@@ -281,8 +277,7 @@ public class GameCommands
                                         }
 
                                         sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Image Guess'";
-                                        statement = JDBCConnection.getStatement(sql, params);
-                                        set = statement.executeQuery();
+                                        set = JDBCConnection.getStatement(sql, params).executeQuery();
                                         String url = "";
                                         if (set.next())
                                         {
@@ -301,13 +296,13 @@ public class GameCommands
                                     }
                                     else
                                     {
-                                        BotUtils.sendMessage(event.getChannel(), "There is no active game. Start one using the command `" + BotUtils.BOT_PREFIX + "stones start`");
+                                        BotUtils.sendMessage(event.getChannel(), "There is no active game. Start one using the command `" + prefix + "stones start`");
                                         return;
                                     }
                                 }
                                 else
                                 {
-                                    BotUtils.sendMessage(event.getChannel(), "There is no active game. Start one using the command `" + BotUtils.BOT_PREFIX + "stones start`");
+                                    BotUtils.sendMessage(event.getChannel(), "There is no active game. Start one using the command `" + prefix + "stones start`");
                                     return;
                                 }
                             }
@@ -376,8 +371,7 @@ public class GameCommands
                                 String sql = "SELECT GameNumber, EndTime, Solution, Tries, Streak, Event FROM DiscordDB.Stones WHERE UserID = ? ORDER BY StartTime DESC LIMIT 1";
                                 List<Object> params = new ArrayList<>();
                                 params.add(event.getAuthor().getLongID());
-                                PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                                ResultSet set = statement.executeQuery();
+                                ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 String solution;
                                 int tries;
                                 int streak;
@@ -387,7 +381,7 @@ public class GameCommands
                                 {
                                     if (set.getTimestamp("EndTime") != null)
                                     {
-                                        BotUtils.sendMessage(event.getChannel(), "There is no active game. Start one using the command `" + BotUtils.BOT_PREFIX + "stones start`");
+                                        BotUtils.sendMessage(event.getChannel(), "There is no active game. Start one using the command `" + prefix + "stones start`");
                                         return;
                                     }
 
@@ -399,7 +393,7 @@ public class GameCommands
                                 }
                                 else
                                 {
-                                    BotUtils.sendMessage(event.getChannel(), "There is no active game. Start one using the command `" + BotUtils.BOT_PREFIX + "stones start`");
+                                    BotUtils.sendMessage(event.getChannel(), "There is no active game. Start one using the command `" + prefix + "stones start`");
                                     return;
                                 }
 
@@ -454,8 +448,7 @@ public class GameCommands
                                     streak++;
                                     sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Win'";
                                     params.clear();
-                                    statement = JDBCConnection.getStatement(sql, params);
-                                    set = statement.executeQuery();
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     if (set.next())
                                     {
                                         response2 = set.getString("Entry");
@@ -471,13 +464,11 @@ public class GameCommands
                                     params.add(streak);
                                     params.add(event.getAuthor().getLongID());
                                     params.add(num);
-                                    statement = JDBCConnection.getStatement(sql, params);
-                                    statement.executeUpdate();
+                                    JDBCConnection.getStatement(sql, params).executeUpdate();
 
                                     sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Image Win'";
                                     params.clear();
-                                    statement = JDBCConnection.getStatement(sql, params);
-                                    set = statement.executeQuery();
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     if (set.next())
                                     {
                                         url = set.getString("Entry");
@@ -493,14 +484,12 @@ public class GameCommands
                                         {
                                             sql = "SELECT Count(*) AS Count FROM DiscordDB.Stones WHERE UserID = ? AND STREAK >= 2";
                                             params.add(event.getAuthor().getLongID());
-                                            statement = JDBCConnection.getStatement(sql, params);
-                                            set = statement.executeQuery();
+                                            set = JDBCConnection.getStatement(sql, params).executeQuery();
                                             if (set.next() && set.getLong("Count") == 1)
                                             {
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Streak 2'";
                                                 params.clear();
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set.next())
                                                 {
                                                     response2 = set.getString("Entry").replace("\\n", "\n");
@@ -512,14 +501,12 @@ public class GameCommands
 
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'War'";
                                                 params.clear();
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set.next())
                                                 {
                                                     long guild = set.getLong("Entry");
                                                     sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Logs'";
-                                                    statement = JDBCConnection.getStatement(sql, params);
-                                                    set = statement.executeQuery();
+                                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                     if (set.next())
                                                     {
                                                         long channel = set.getLong("Entry");
@@ -542,14 +529,12 @@ public class GameCommands
                                         {
                                             sql = "SELECT Count(*) AS Count FROM DiscordDB.Stones WHERE UserID = ? AND STREAK >= 4";
                                             params.add(event.getAuthor().getLongID());
-                                            statement = JDBCConnection.getStatement(sql, params);
-                                            set = statement.executeQuery();
+                                            set = JDBCConnection.getStatement(sql, params).executeQuery();
                                             if (set.next() && set.getLong("Count") == 1)
                                             {
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Streak 4'";
                                                 params.clear();
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set.next())
                                                 {
                                                     response2 = set.getString("Entry");
@@ -561,8 +546,7 @@ public class GameCommands
 
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Streak Image 4'";
                                                 params.clear();
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set.next())
                                                 {
                                                     thumb = set.getString("Entry");
@@ -573,14 +557,12 @@ public class GameCommands
                                                 }
 
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'War'";
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set.next())
                                                 {
                                                     long guild = set.getLong("Entry");
                                                     sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Logs'";
-                                                    statement = JDBCConnection.getStatement(sql, params);
-                                                    set = statement.executeQuery();
+                                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                     if (set.next())
                                                     {
                                                         long channel = set.getLong("Entry");
@@ -602,14 +584,12 @@ public class GameCommands
                                         {
                                             sql = "SELECT Count(*) AS Count FROM DiscordDB.Stones WHERE UserID = ? AND STREAK >= 7";
                                             params.add(event.getAuthor().getLongID());
-                                            statement = JDBCConnection.getStatement(sql, params);
-                                            set = statement.executeQuery();
+                                            set = JDBCConnection.getStatement(sql, params).executeQuery();
                                             if (set.next() && set.getLong("Count") == 1)
                                             {
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Streak 7'";
                                                 params.clear();
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set.next())
                                                 {
                                                     response2 = set.getString("Entry");
@@ -621,8 +601,7 @@ public class GameCommands
 
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Streak Image 7'";
                                                 params.clear();
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set.next())
                                                 {
                                                     thumb = set.getString("Entry");
@@ -633,14 +612,12 @@ public class GameCommands
                                                 }
 
                                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'War'";
-                                                statement = JDBCConnection.getStatement(sql, params);
-                                                set = statement.executeQuery();
+                                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                 if (set.next())
                                                 {
                                                     long guild = set.getLong("Entry");
                                                     sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Logs'";
-                                                    statement = JDBCConnection.getStatement(sql, params);
-                                                    set = statement.executeQuery();
+                                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                                     if (set.next())
                                                     {
                                                         long channel = set.getLong("Entry");
@@ -664,8 +641,7 @@ public class GameCommands
                                 {
                                     sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Loss'";
                                     params.clear();
-                                    statement = JDBCConnection.getStatement(sql, params);
-                                    set = statement.executeQuery();
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     if (set.next())
                                     {
                                         response2 = set.getString("Entry");
@@ -680,13 +656,11 @@ public class GameCommands
                                     params.add(BotUtils.now());
                                     params.add(event.getAuthor().getLongID());
                                     params.add(num);
-                                    statement = JDBCConnection.getStatement(sql, params);
-                                    statement.executeUpdate();
+                                    JDBCConnection.getStatement(sql, params).executeUpdate();
 
                                     sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Image Loss'";
                                     params.clear();
-                                    statement = JDBCConnection.getStatement(sql, params);
-                                    set = statement.executeQuery();
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     url = "";
                                     if (set.next())
                                     {
@@ -695,8 +669,7 @@ public class GameCommands
                                 }
                                 sql = "SELECT Count(*) AS Count FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Guess'";
                                 params.clear();
-                                statement = JDBCConnection.getStatement(sql, params);
-                                set = statement.executeQuery();
+                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 int max;
                                 if (set.next())
                                 {
@@ -716,8 +689,7 @@ public class GameCommands
                                     }
                                 }
                                 sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Guess' ORDER BY EntryID ASC";
-                                statement = JDBCConnection.getStatement(sql, params);
-                                set = statement.executeQuery();
+                                set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 if (set.next())
                                 {
                                     if (rand != 0)
@@ -730,14 +702,12 @@ public class GameCommands
                                     else
                                     {
                                         sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'War'";
-                                        statement = JDBCConnection.getStatement(sql, params);
-                                        ResultSet warSet = statement.executeQuery();
+                                        ResultSet warSet = JDBCConnection.getStatement(sql, params).executeQuery();
                                         if (warSet.next())
                                         {
                                             long guild = warSet.getLong("Entry");
                                             sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stones Logs'";
-                                            statement = JDBCConnection.getStatement(sql, params);
-                                            warSet = statement.executeQuery();
+                                            warSet = JDBCConnection.getStatement(sql, params).executeQuery();
                                             if (warSet.next())
                                             {
                                                 long channel = warSet.getLong("Entry");
@@ -765,8 +735,7 @@ public class GameCommands
                                 params.add(tries);
                                 params.add(event.getAuthor().getLongID());
                                 params.add(num);
-                                statement = JDBCConnection.getStatement(sql, params);
-                                statement.executeUpdate();
+                                JDBCConnection.getStatement(sql, params).executeUpdate();
 
                                 EmbedBuilder builder = new EmbedBuilder();
                                 builder.withAuthorName("Stones and Cups");
@@ -811,8 +780,7 @@ public class GameCommands
                                     sql = "SELECT Streak FROM DiscordDB.Stones WHERE UserID = ? ORDER BY Streak DESC LIMIT 1";
                                     params.clear();
                                     params.add(event.getAuthor().getLongID());
-                                    statement = JDBCConnection.getStatement(sql, params);
-                                    set = statement.executeQuery();
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     int best = 0;
                                     if (set.next())
                                     {
@@ -830,8 +798,7 @@ public class GameCommands
                                     sql = "SELECT Streak FROM DiscordDB.Stones WHERE UserID = ? ORDER BY Streak DESC LIMIT 1";
                                     params.clear();
                                     params.add(event.getAuthor().getLongID());
-                                    statement = JDBCConnection.getStatement(sql, params);
-                                    set = statement.executeQuery();
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
                                     int best = 0;
                                     if (set.next())
                                     {
@@ -867,8 +834,7 @@ public class GameCommands
                             params.add(event.getAuthor().getLongID());
                             params.add(event.getAuthor().getLongID());
                             params.add(event.getAuthor().getLongID());
-                            PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                            ResultSet set = statement.executeQuery();
+                            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
                             if (set.next())
                             {
@@ -886,8 +852,7 @@ public class GameCommands
                             sql = "SELECT Tries FROM DiscordDB.Stones WHERE Win = true AND Event = true AND EndTime IS NOT NULL AND UserID = ?";
                             params.clear();
                             params.add(event.getAuthor().getLongID());
-                            statement = JDBCConnection.getStatement(sql, params);
-                            set = statement.executeQuery();
+                            set = JDBCConnection.getStatement(sql, params).executeQuery();
 
                             int sum = 0;
                             while (set.next())
@@ -929,8 +894,7 @@ public class GameCommands
                         {
                             String sql = "SELECT DISTINCT UserID FROM DiscordDB.Stones";
                             List<Object> params = new ArrayList<>();
-                            PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-                            ResultSet set = statement.executeQuery();
+                            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                             List<Integer> allWins = new ArrayList<>();
                             List<Integer> allStreaks = new ArrayList<>();
                             Integer[] allTries = new Integer[12];
@@ -954,8 +918,7 @@ public class GameCommands
                                 params.add(set.getLong("UserID"));
                                 params.add(set.getLong("UserID"));
                                 params.add(set.getLong("UserID"));
-                                statement = JDBCConnection.getStatement(sql, params);
-                                ResultSet userSet = statement.executeQuery();
+                                ResultSet userSet = JDBCConnection.getStatement(sql, params).executeQuery();
 
                                 if (userSet.next())
                                 {
@@ -976,8 +939,7 @@ public class GameCommands
                                 sql = "SELECT Tries FROM DiscordDB.Stones WHERE Win = true AND Event = true AND EndTime IS NOT NULL AND UserID = ?";
                                 params.clear();
                                 params.add(set.getLong("UserID"));
-                                statement = JDBCConnection.getStatement(sql, params);
-                                userSet = statement.executeQuery();
+                                userSet = JDBCConnection.getStatement(sql, params).executeQuery();
 
                                 int sum = 0;
                                 while (userSet.next())

@@ -1,4 +1,3 @@
-import org.knowm.xchart.internal.chartpart.AxisTickCalculator_;
 import sx.blah.discord.api.events.IListener;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
@@ -15,11 +14,13 @@ public class UtilityCommands
 {
     private final String YES = "\u2705";
     private final String NO = "\u274C";
+    private String prefix;
 
-    public UtilityCommands(Map<String, Command> map)
+    public UtilityCommands(Map<String, Command> map, String p)
     {
+        prefix = p;
         //Give user info
-        map.put("userinfo", new Command("userinfo", "Gathers the requester's info", BotUtils.BOT_PREFIX + "userinfo [@user]", AccessLevel.EVERYONE, false, (event, args) ->
+        map.put("userinfo", new Command("userinfo", "Gathers the requester's info", prefix + "userinfo [@user]", AccessLevel.EVERYONE, false, (event, args) ->
         {
             EmbedBuilder builder = new EmbedBuilder();
             IUser user;
@@ -96,7 +97,7 @@ public class UtilityCommands
             BotUtils.sendMessage(event.getChannel(), builder.build());
         }));
 
-        map.put("role", new Command("role", "Add or remove a role", BotUtils.BOT_PREFIX + "role", AccessLevel.EVERYONE, false, new Command[]
+        map.put("role", new Command("role", "Add or remove a role", prefix + "role", AccessLevel.EVERYONE, false, new Command[]
                 {
                         new Command("set", "Sets a selectable role to be added with a code. Code cannot have spaces. Add auto to have the role added upon join.", "set [auto] <role id> <role code>", AccessLevel.MOD, false, ((event, args) ->
                         {
@@ -131,7 +132,7 @@ public class UtilityCommands
                                 ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                                 if (set.next())
                                 {
-                                    BotUtils.sendMessage(event.getChannel(), "There is already a role with this code. Please use `" + BotUtils.BOT_PREFIX + "set " + set.getLong("RoleID") + " <code>` with a new code to use this code.");
+                                    BotUtils.sendMessage(event.getChannel(), "There is already a role with this code. Please use `" + prefix + "set " + set.getLong("RoleID") + " <code>` with a new code to use this code.");
                                     return;
                                 }
 
@@ -332,7 +333,7 @@ public class UtilityCommands
                 })
         );
 
-        map.put("get", new Command("get", "Get info", BotUtils.BOT_PREFIX + "get", AccessLevel.EVERYONE, false, new Command[]
+        map.put("get", new Command("get", "Get info", prefix + "get", AccessLevel.EVERYONE, false, new Command[]
                 {
                         new Command("guild", "Guild info", "guild [id/name]", AccessLevel.EVERYONE, false, ((event, args) ->
                         {

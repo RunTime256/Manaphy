@@ -1,14 +1,12 @@
 import com.univocity.parsers.fixed.FixedWidthFields;
 import com.univocity.parsers.fixed.FixedWidthWriter;
 import com.univocity.parsers.fixed.FixedWidthWriterSettings;
-import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.events.IListener;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.*;
 
 import java.io.StringWriter;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
@@ -23,18 +21,20 @@ public class ManagerCommands
 
     private final String YES = "\u2705";
     private final String NO = "\u274C";
+    private String prefix;
 
-    public ManagerCommands(Map<String, Command> map)
+    public ManagerCommands(Map<String, Command> map, String p)
     {
+        prefix = p;
         //Shuts down the bot and ends the connection
-        map.put("shutdown", new Command("shutdown", "Shuts down the bot", BotUtils.BOT_PREFIX + "shutdown", AccessLevel.MANAGER, false, (event, args) ->
+        map.put("shutdown", new Command("shutdown", "Shuts down the bot", prefix + "shutdown", AccessLevel.MANAGER, false, (event, args) ->
         {
             BotUtils.sendMessage(event.getChannel(), "Shutting down...");
             event.getClient().logout();
         }));
 
         //Sets the presence and text of the bot
-        map.put("presence", new Command("presence", "Sets the presence", BotUtils.BOT_PREFIX + "presence <status> [activity] [text]", AccessLevel.MANAGER, true, (event, args) ->
+        map.put("presence", new Command("presence", "Sets the presence", prefix + "presence <status> [activity] [text]", AccessLevel.MANAGER, true, (event, args) ->
         {
             StatusType status;
             ActivityType activity;
@@ -112,7 +112,7 @@ public class ManagerCommands
         }));
 
         //Replicates messages from the manager's DMs and sends them to a channel
-        map.put("mimic", new Command("mimic", "Replicates DMs to selected channel", BotUtils.BOT_PREFIX + "mimic <start/stop> <guild> <channel>", AccessLevel.MANAGER, true, (event, args) ->
+        map.put("mimic", new Command("mimic", "Replicates DMs to selected channel", prefix + "mimic <start/stop> <guild> <channel>", AccessLevel.MANAGER, true, (event, args) ->
         {
             if (args.size() == 1)
             {
@@ -157,7 +157,7 @@ public class ManagerCommands
             }
         }));
 
-        map.put("sql", new Command("sql", "Perform a MySQL statement", BotUtils.BOT_PREFIX + "sql <statement>", AccessLevel.MANAGER, true, (event, args) ->
+        map.put("sql", new Command("sql", "Perform a MySQL statement", prefix + "sql <statement>", AccessLevel.MANAGER, true, (event, args) ->
         {
             if (args.size() < 1)
             {

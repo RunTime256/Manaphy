@@ -1,14 +1,13 @@
-import sx.blah.discord.handle.obj.IChannel;
-
 import java.util.Map;
 
 public class TestCommands
 {
-
-    public TestCommands(Map<String, Command> map)
+    private String prefix;
+    public TestCommands(Map<String, Command> map, String p)
     {
+        prefix = p;
         //Test message to ensure bot is running and receiving commands
-        map.put("test", new Command("test", "Provides a test message", BotUtils.BOT_PREFIX + "test", AccessLevel.MANAGER, false, (event, args) ->
+        map.put("test", new Command("test", "Provides a test message", prefix + "test", AccessLevel.MANAGER, false, (event, args) ->
         {
             BotUtils.sendMessage(event.getChannel(), "Test complete!");
         }));

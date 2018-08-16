@@ -9,9 +9,12 @@ import java.util.Map;
 
 public class HelpCommands
 {
-    public HelpCommands(Map<String, Command> map)
+    private String prefix;
+
+    public HelpCommands(Map<String, Command> map, String p)
     {
-        map.put("help", new Command("help", "Lists all available commands and what they do", BotUtils.BOT_PREFIX + "help [command]", AccessLevel.EVERYONE, false, (event, args) ->
+        prefix = p;
+        map.put("help", new Command("help", "Lists all available commands and what they do", prefix + "help [command]", AccessLevel.EVERYONE, false, (event, args) ->
         {
             IChannel channel = event.getChannel();
             EmbedBuilder builder = new EmbedBuilder();

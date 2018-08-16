@@ -28,8 +28,9 @@ import java.util.Random;
 
 class BotUtils
 {
-    public static final String BOT_PREFIX = "+";
+    public static final String DEFAULT_PREFIX = "+";
     public static final String HIDDEN_PREFIX = "-";
+    public static final String BOT_PREFIX = "=";
     public static Random RAND = new Random();
     public static final Color DEFAULT_COLOR = new Color(255, 255, 255);
     public static final Color EXCEPTION_COLOR = new Color(255, 0, 0);
@@ -58,9 +59,7 @@ class BotUtils
     //Handles the creation and getting of a IDiscordClient object for a token
     public static IDiscordClient getBuiltDiscordClient(String token)
     {
-        return new ClientBuilder()
-                .withToken(token)
-                .build();
+        return new ClientBuilder().withToken(token).build();
     }
 
     //If there is an exception, this error message will be displayed in chat
@@ -292,6 +291,68 @@ class BotUtils
     public static ZonedDateTime now()
     {
         return LocalDateTime.now().atZone(ZoneId.of("UTC-6"));
+    }
+
+    public static Color getHex(String code)
+    {
+        if (code.startsWith("#"))
+        {
+            code = code.substring(1);
+        }
+        if (code.length() != 6)
+        {
+            return null;
+        }
+        int one, two, three;
+        one = getHexNum(code.substring(0, 2));
+        two = getHexNum(code.substring(2, 4));
+        three = getHexNum(code.substring(4, 6));
+        if (one < 0 || two < 0 || three < 0)
+        {
+            return null;
+        }
+        return new Color(one, two, three);
+    }
+
+    private static int getHexNum(String code)
+    {
+        String[] letters = {"A", "B", "C", "D", "E", "F"};
+        int one = -1, two = -1;
+        try
+        {
+            one = Integer.parseInt(code.substring(0, 1));
+        }
+        catch (NumberFormatException e)
+        {
+            for (int i = 0; i < letters.length; i++)
+            {
+                if (code.substring(0, 1).equals(letters[i]))
+                {
+                    one = 10 + i;
+                    break;
+                }
+            }
+            if (one < 0)
+                return -1;
+        }
+        try
+        {
+            two = Integer.parseInt(code.substring(0, 1));
+        }
+        catch (NumberFormatException e)
+        {
+            for (int i = 0; i < letters.length; i++)
+            {
+                if (code.substring(0, 1).equals(letters[i]))
+                {
+                    two = 10 + i;
+                    break;
+                }
+            }
+            if (two < 0)
+                return -1;
+        }
+        return one * 16 + two;
     }
 
     /*

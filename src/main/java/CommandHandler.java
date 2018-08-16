@@ -17,27 +17,37 @@ public class CommandHandler
 {
     private Map<String, Command> commands;
     private Map<String, Command> hiddenCommands;
+    private Map<String, Command> secretCommands;
+    private Map<String, Command> botCommands;
 
     public CommandHandler()
     {
         commands = new HashMap<>();
         hiddenCommands = new HashMap<>();
+        secretCommands = new HashMap<>();
+        botCommands = new HashMap<>();
 
         //Add all commands to the map
-        new ManagerCommands(commands);
-        new OwnerCommands(commands);
-        new AdminCommands(commands);
-        new ModeratorCommands(commands);
-        new TestCommands(commands);
-        new UtilityCommands(commands);
-        new HelpCommands(commands);
-        new EventCommands(commands);
-        new GameCommands(commands);
+        new ManagerCommands(commands, BotUtils.DEFAULT_PREFIX);
+        new OwnerCommands(commands, BotUtils.DEFAULT_PREFIX);
+        new AdminCommands(commands, BotUtils.DEFAULT_PREFIX);
+        new ModeratorCommands(commands, BotUtils.DEFAULT_PREFIX);
+        new TestCommands(commands, BotUtils.DEFAULT_PREFIX);
+        new UtilityCommands(commands, BotUtils.DEFAULT_PREFIX);
+        new HelpCommands(commands, BotUtils.DEFAULT_PREFIX);
+        new EventCommands(commands, BotUtils.DEFAULT_PREFIX);
+        new GameCommands(commands, BotUtils.DEFAULT_PREFIX);
 
         //Commands to be added at a later date that are testable
-        new HelpCommands(hiddenCommands);
-        new HiddenCommands(hiddenCommands);
-        new TwitchCommands(hiddenCommands);
+        new HelpCommands(hiddenCommands, BotUtils.HIDDEN_PREFIX);
+        new HiddenCommands(hiddenCommands, BotUtils.HIDDEN_PREFIX);
+        new TwitchCommands(hiddenCommands, BotUtils.HIDDEN_PREFIX);
+
+        //Commands that are secret (normal command but hidden from help)
+        new SecretCommands(secretCommands, BotUtils.DEFAULT_PREFIX);
+
+        //Commands that are only executable by bots
+        new BotCommands(botCommands, BotUtils.BOT_PREFIX);
     }
 
     //Updates playing text when starting up
@@ -144,7 +154,7 @@ public class CommandHandler
         }
 
         //Checks to see if there is a passive command to run
-        if (!(args[0].startsWith(BotUtils.BOT_PREFIX) || args[0].startsWith(BotUtils.HIDDEN_PREFIX)))
+        if (!(args[0].startsWith(BotUtils.DEFAULT_PREFIX) || args[0].startsWith(BotUtils.HIDDEN_PREFIX)))
         {
             //Replicate DMs if mimicking is enabled
             if (event.getGuild() == null && ManagerCommands.isMimicActive() && ManagerCommands.getMimicReceive().getLongID() == event.getChannel().getLongID())
@@ -159,14 +169,22 @@ public class CommandHandler
         List<String> argsList = new ArrayList<>(Arrays.asList(args));
         argsList.remove(0);
         Map<String, Command> map;
+        boolean secret = false;
+        boolean bot = false;
         //Determines command map based on prefix
-        if (args[0].startsWith(BotUtils.BOT_PREFIX))
+        if (args[0].startsWith(BotUtils.DEFAULT_PREFIX))
         {
             map = commands;
+            secret = true;
         }
         else if (args[0].startsWith(BotUtils.HIDDEN_PREFIX))
         {
             map = hiddenCommands;
+        }
+        else if (args[0].startsWith(BotUtils.BOT_PREFIX))
+        {
+            map = botCommands;
+            bot = true;
         }
         else
         {
@@ -176,6 +194,26 @@ public class CommandHandler
         //Checks to see if there is a command with the given key
         if (map.containsKey(comStr))
         {
+            if (bot && event.getAuthor().isBot() || !bot && !event.getAuthor().isBot())
+            {
+                try
+                {
+                    event.getChannel().setTypingStatus(true);
+                    map.get(comStr).execute(event, argsList);
+                } catch (Exception e)
+                {
+                    BotUtils.sendCommandError(event.getChannel());
+                    System.out.println("\nNew " + e.getClass().getSimpleName() + " at " + BotUtils.formatDate(BotUtils.now().toInstant()) + "\n");
+                    e.printStackTrace();
+                } finally
+                {
+                    event.getChannel().setTypingStatus(false);
+                }
+            }
+        }
+        else if (secret && secretCommands.containsKey(comStr))
+        {
+            map = secretCommands;
             try
             {
                 event.getChannel().setTypingStatus(true);

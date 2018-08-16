@@ -143,7 +143,6 @@ public class Command
     //Checks if there is a sub command with given args and executes that one
     public void execute(MessageReceivedEvent event, List<String> argsList, int pos) throws SQLException
     {
-        JDBCConnection.connect();
         String sql;
         List<Object> params = new ArrayList<>();
         //Checks if user has widespread permissions
