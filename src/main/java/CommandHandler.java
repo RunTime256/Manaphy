@@ -20,6 +20,8 @@ public class CommandHandler
     private Map<String, Command> secretCommands;
     private Map<String, Command> botCommands;
 
+/*
+    //Main constructor during publish
     public CommandHandler()
     {
         commands = new HashMap<>();
@@ -38,17 +40,27 @@ public class CommandHandler
         new EventCommands(commands, BotUtils.DEFAULT_PREFIX);
         new GameCommands(commands, BotUtils.DEFAULT_PREFIX);
 
-        //Commands to be added at a later date that are testable
-        new HelpCommands(hiddenCommands, BotUtils.HIDDEN_PREFIX);
-        new HiddenCommands(hiddenCommands, BotUtils.HIDDEN_PREFIX);
-        new TwitchCommands(hiddenCommands, BotUtils.HIDDEN_PREFIX);
-
         //Commands that are secret (normal command but hidden from help)
         new SecretCommands(secretCommands, BotUtils.DEFAULT_PREFIX);
 
         //Commands that are only executable by bots
         new BotCommands(botCommands, BotUtils.BOT_PREFIX);
     }
+*/
+
+
+    //Test constructor for specific command improvements
+    public CommandHandler()
+    {
+        commands = new HashMap<>();
+        hiddenCommands = new HashMap<>();
+        secretCommands = new HashMap<>();
+        botCommands = new HashMap<>();
+
+        new GameCommands(hiddenCommands, BotUtils.TEST_PREFIX);
+        new HelpCommands(hiddenCommands, BotUtils.TEST_PREFIX);
+    }
+
 
     //Updates playing text when starting up
     @EventSubscriber
@@ -58,8 +70,6 @@ public class CommandHandler
         event.getClient().changePresence(StatusType.ONLINE, ActivityType.PLAYING, "+help");
         //event.getClient().changePresence(StatusType.ONLINE, ActivityType.WATCHING, "from afar");
         //event.getClient().changePresence(StatusType.INVISIBLE);
-
-
     }
 
     @EventSubscriber
@@ -154,7 +164,7 @@ public class CommandHandler
         }
 
         //Checks to see if there is a passive command to run
-        if (!(args[0].startsWith(BotUtils.DEFAULT_PREFIX) || args[0].startsWith(BotUtils.HIDDEN_PREFIX)))
+        if (!(args[0].startsWith(BotUtils.DEFAULT_PREFIX) || args[0].startsWith(BotUtils.TEST_PREFIX) || args[0].startsWith(BotUtils.BOT_PREFIX)))
         {
             //Replicate DMs if mimicking is enabled
             if (event.getGuild() == null && ManagerCommands.isMimicActive() && ManagerCommands.getMimicReceive().getLongID() == event.getChannel().getLongID())
@@ -177,7 +187,7 @@ public class CommandHandler
             map = commands;
             secret = true;
         }
-        else if (args[0].startsWith(BotUtils.HIDDEN_PREFIX))
+        else if (args[0].startsWith(BotUtils.TEST_PREFIX))
         {
             map = hiddenCommands;
         }

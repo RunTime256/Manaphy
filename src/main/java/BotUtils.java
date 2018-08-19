@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -29,7 +28,7 @@ import java.util.Random;
 class BotUtils
 {
     public static final String DEFAULT_PREFIX = "+";
-    public static final String HIDDEN_PREFIX = "-";
+    public static final String TEST_PREFIX = "-";
     public static final String BOT_PREFIX = "=";
     public static Random RAND = new Random();
     public static final Color DEFAULT_COLOR = new Color(255, 255, 255);
@@ -169,12 +168,9 @@ class BotUtils
     public static boolean isPokemon(MessageReceivedEvent event) throws SQLException
     {
         long c;
-        String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryID = ?";
+        String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon'";
         List<Object> params = new ArrayList<>();
-        //ID of Pokemon ID
-        params.add(1);
-        PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-        ResultSet set = statement.executeQuery();
+        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
         if (set == null)
             return false;
         else if (set.next())
@@ -184,10 +180,34 @@ class BotUtils
         else
         {
             System.out.println("No valid channel entry");
-            statement.close();
             return false;
         }
-        statement.close();
+
+        //If the user is a member of the Pokemon discord
+        if (event.getClient().getGuildByID(c).getUserByID(event.getAuthor().getLongID()) != null)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isWort(MessageReceivedEvent event) throws SQLException
+    {
+        long c;
+        String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Fort Wort'";
+        List<Object> params = new ArrayList<>();
+        ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+        if (set == null)
+            return false;
+        else if (set.next())
+        {
+            c = set.getLong("Entry");
+        }
+        else
+        {
+            System.out.println("No valid channel entry");
+            return false;
+        }
 
         //If the user is a member of the Pokemon discord
         if (event.getClient().getGuildByID(c).getUserByID(event.getAuthor().getLongID()) != null)
@@ -365,8 +385,7 @@ class BotUtils
             String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryID = ?";
             List<Object> params = new ArrayList<>();
             params.add(2);
-            PreparedStatement statement = JDBCConnection.getStatement(sql, params);
-            ResultSet set = statement.executeQuery();
+            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
             if (set == null)
                 return;
             else if (set.next())
@@ -376,10 +395,8 @@ class BotUtils
             else
             {
                 System.out.println("No valid channel entry");
-                statement.close();
                 return;
             }
-            statement.close();
         }
         catch (SQLException e)
         {

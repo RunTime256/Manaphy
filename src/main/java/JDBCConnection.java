@@ -85,6 +85,8 @@ public class JDBCConnection
                 statement.setString(i + 1, (String)params.get(i));
             else if (params.get(i).getClass() == Integer.class)
                 statement.setInt(i + 1, (Integer)params.get(i));
+            else if (params.get(i).getClass() == Double.class)
+                statement.setDouble(i + 1, (Double)params.get(i));
             else if (params.get(i).getClass() == Boolean.class)
                 statement.setBoolean(i + 1, (Boolean)params.get(i));
             else if (params.get(i).getClass() == ZonedDateTime.class)
