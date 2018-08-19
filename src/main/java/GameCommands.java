@@ -4,7 +4,9 @@ import org.knowm.xchart.CategoryChartBuilder;
 import org.knowm.xchart.style.Styler;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
+import sx.blah.discord.handle.obj.IGuild;
 import sx.blah.discord.handle.obj.IMessage;
+import sx.blah.discord.handle.obj.IRole;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
@@ -1346,7 +1348,12 @@ public class GameCommands
 
                             if (games != 0)
                             {
-                                score = streak * 20.0 / ((sum * 1.0 + 15 * (games - wins)) / games);
+                                int mult;
+                                if (isEvent3)
+                                    mult = 10;
+                                else
+                                    mult = 15;
+                                score = streak * 20.0 / ((sum * 1.0 + mult * (games - wins)) / games);
                             }
                             score = ((int)(score * 1000)) / 1000.0;
 
@@ -1505,7 +1512,12 @@ public class GameCommands
                                 double score = 0;
                                 if (games != 0)
                                 {
-                                    score = streak * 20.0 / ((sum * 1.0 + 15 * (games - wins)) / games);
+                                    int mult;
+                                    if (isEvent3)
+                                        mult = 10;
+                                    else
+                                        mult = 15;
+                                    score = streak * 20.0 / ((sum * 1.0 + mult * (games - wins)) / games);
                                 }
                                 score = ((int) (score * 1000)) / 1000.0;
 
@@ -1805,7 +1817,12 @@ public class GameCommands
         double score = 0;
         if (games != 0)
         {
-            score = streak * 20.0 / ((sum * 1.0 + 15 * (games - wins)) / games);
+            int mult;
+            if (isEvent3)
+                mult = 10;
+            else
+                mult = 15;
+            score = streak * 20.0 / ((sum * 1.0 + mult * (games - wins)) / games);
         }
         score = ((int)(score * 1000)) / 1000.0;
 
@@ -1853,6 +1870,29 @@ public class GameCommands
         }
         else
             return;
+
+        if (!isEvent3)
+        {
+            IGuild guild;
+            sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon'";
+            params.clear();
+            set = JDBCConnection.getStatement(sql, params).executeQuery();
+            if (set.next())
+                guild = event.getClient().getGuildByID(set.getLong("Entry"));
+            else
+                return;
+
+            long role;
+            sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Stone Merchant Role'";
+            set = JDBCConnection.getStatement(sql, params).executeQuery();
+            if (set.next())
+                role = set.getLong("Entry");
+            else
+                return;
+
+            List<IUser> users = guild.getUsersByRole(guild.getRoleByID(role));
+
+        }
 
         EmbedBuilder builder = new EmbedBuilder();
         builder.withTitle("Stones and Cups Leaderboard");

@@ -413,13 +413,7 @@ public class UtilityCommands
                                     return;
                                 }
 
-                                int count =  0;
-                                List<IUser> users = guild.getUsers();
-                                for (int i = 0; i < users.size(); i++)
-                                {
-                                    if (users.get(i).hasRole(role))
-                                        count++;
-                                }
+                                int count =  guild.getUsersByRole(role).size();
                                 EmbedBuilder builder = new EmbedBuilder();
                                 builder.withTitle(role.getName());
                                 builder.withColor(role.getColor());
