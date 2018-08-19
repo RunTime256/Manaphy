@@ -21,7 +21,7 @@ public class CommandHandler
     private Map<String, Command> secretCommands;
     private Map<String, Command> botCommands;
 
-/*
+
     //Main constructor during publish
     public CommandHandler()
     {
@@ -47,8 +47,8 @@ public class CommandHandler
         //Commands that are only executable by bots
         new BotCommands(botCommands, BotUtils.BOT_PREFIX);
     }
-*/
 
+/*
     //Test constructor for specific command improvements
     public CommandHandler()
     {
@@ -73,7 +73,7 @@ public class CommandHandler
         //Commands that are only executable by bots
         new BotCommands(hiddenCommands, BotUtils.BOT_PREFIX);
     }
-
+*/
 
     //Updates playing text when starting up
     @EventSubscriber
