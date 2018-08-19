@@ -8,9 +8,10 @@ import java.sql.Driver;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+@SuppressWarnings("WeakerAccess")
 public class JDBCConnection
 {
-    public static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
+    private static final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
     private static Connection conn;
     private static String url;
     private static String username;
@@ -31,10 +32,6 @@ public class JDBCConnection
             Class.forName(JDBC_DRIVER);
 
             conn = DriverManager.getConnection(url, username, password);
-        }
-        catch(SQLException e)
-        {
-            e.printStackTrace();
         }
         catch(Exception e)
         {

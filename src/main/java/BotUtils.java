@@ -1,5 +1,3 @@
-import sx.blah.discord.api.ClientBuilder;
-import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.MessageReceivedEvent;
 import sx.blah.discord.handle.impl.obj.ReactionEmoji;
@@ -25,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+@SuppressWarnings({"WeakerAccess", "StringConcatenationInLoop", "ConstantConditions"})
 class BotUtils
 {
     public static final String DEFAULT_PREFIX = "+";
@@ -32,8 +31,9 @@ class BotUtils
     public static final String BOT_PREFIX = "=";
     public static Random RAND = new Random();
     public static final Color DEFAULT_COLOR = new Color(255, 255, 255);
-    public static final Color EXCEPTION_COLOR = new Color(255, 0, 0);
-    public static final Color WRONG_PERMISSION_COLOR = new Color(255, 255, 0);
+    //public static final Color EXCEPTION_COLOR = new Color(255, 0, 0);
+    //public static final Color WRONG_PERMISSION_COLOR = new Color(255, 255, 0);
+    private static final String[] letters = {"A", "B", "C", "D", "E", "F"};
 
     private static String passHash;
 
@@ -48,27 +48,19 @@ class BotUtils
                 MessageDigest sha512 = MessageDigest.getInstance("SHA-512");
                 passHash = new String(sha512.digest(pass.getBytes()));
             }
-            catch (NoSuchAlgorithmException e)
+            catch (NoSuchAlgorithmException ignored)
             {
-                return;
             }
         }
     }
 
-    //Handles the creation and getting of a IDiscordClient object for a token
-    public static IDiscordClient getBuiltDiscordClient(String token)
-    {
-        return new ClientBuilder().withToken(token).build();
-    }
-
     //If there is an exception, this error message will be displayed in chat
-    public static IMessage sendCommandError(IChannel channel)
+    public static void sendCommandError(IChannel channel)
     {
         RequestBuffer.RequestFuture<IMessage> rf = RequestBuffer.request(() -> {
             try
             {
-                IMessage mess = channel.sendMessage("There was an error running this command.");
-                return mess;
+                return channel.sendMessage("There was an error running this command.");
             }
             catch (DiscordException e)
             {
@@ -78,7 +70,7 @@ class BotUtils
             }
         });
 
-        return rf.get();
+        rf.get();
     }
 
     //Sends the requested message
@@ -88,8 +80,7 @@ class BotUtils
         {
             try
             {
-                IMessage mess = channel.sendMessage(message);
-                return mess;
+                return channel.sendMessage(message);
             }
             catch (DiscordException e)
             {
@@ -109,8 +100,7 @@ class BotUtils
         {
             try
             {
-                IMessage mess = channel.sendMessage(message);
-                return mess;
+                return channel.sendMessage(message);
             }
             catch (DiscordException e)
             {
@@ -140,14 +130,15 @@ class BotUtils
         });
     }
 
+    //Sends the requested File
+    @SuppressWarnings("UnusedReturnValue")
     public static IMessage sendFile(IChannel channel, File file)
     {
         RequestBuffer.RequestFuture<IMessage> rf = RequestBuffer.request(() ->
         {
             try
             {
-                IMessage mess = channel.sendFile(file);
-                return mess;
+                return channel.sendFile(file);
             }
             catch (DiscordException e)
             {
@@ -171,57 +162,39 @@ class BotUtils
         String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon'";
         List<Object> params = new ArrayList<>();
         ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
-        if (set == null)
-            return false;
-        else if (set.next())
-        {
+        if (set.next())
             c = set.getLong("Entry");
-        }
         else
-        {
-            System.out.println("No valid channel entry");
             return false;
-        }
 
         //If the user is a member of the Pokemon discord
-        if (event.getClient().getGuildByID(c).getUserByID(event.getAuthor().getLongID()) != null)
-        {
-            return true;
-        }
-        return false;
+        return event.getClient().getGuildByID(c).getUserByID(event.getAuthor().getLongID()) != null;
     }
 
+    //Checks if the user is a member of the Fort Wort discord to run the command
     public static boolean isWort(MessageReceivedEvent event) throws SQLException
     {
         long c;
         String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Fort Wort'";
         List<Object> params = new ArrayList<>();
         ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
-        if (set == null)
-            return false;
-        else if (set.next())
-        {
+        if (set.next())
             c = set.getLong("Entry");
-        }
         else
-        {
-            System.out.println("No valid channel entry");
             return false;
-        }
 
-        //If the user is a member of the Pokemon discord
-        if (event.getClient().getGuildByID(c).getUserByID(event.getAuthor().getLongID()) != null)
-        {
-            return true;
-        }
-        return false;
+        //If the user is a member of the Fort Wort discord
+        return event.getClient().getGuildByID(c).getUserByID(event.getAuthor().getLongID()) != null;
     }
 
+    //Breaks username and discriminator into two separate indexes in an array
     public static String[] separateTag(String text)
     {
         String[] temp = new String[2];
+        //If there is a potential valid discriminator at the end of the username (#0000) separate them
         if (text.length() > 5 && text.substring(text.length() - 5, text.length() - 4).equals("#"))
         {
+            //Try parsing the end to see if it is a valid number
             try
             {
                 String t = text.substring(text.length() - 4);
@@ -252,33 +225,28 @@ class BotUtils
             int start;
             //Checks if it starts with a nickname or role
             if (text.startsWith("<@!") || text.startsWith("<@&"))
-            {
                 start = 3;
-            }
             else
-            {
                 start = 2;
-            }
+
             if (text.endsWith(">"))
             {
                 try
                 {
-                    //Parse the user long
-                    long l = Long.parseLong(text.substring(start, text.length() - 1));
-                    return l;
+                    return Long.parseLong(text.substring(start, text.length() - 1));
                 }
                 catch(NumberFormatException e)
                 {
                     return -1;
                 }
             }
+            else
+                return -1;
         }
-        //Checks whole string
+        //Checks whole string if there is no @ mention
         try
         {
-            //If there is no mention, check the whole string for a long
-            long l = Long.parseLong(text);
-            return l;
+            return Long.parseLong(text);
         }
         catch(NumberFormatException e)
         {
@@ -292,56 +260,59 @@ class BotUtils
         return DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm").format(instant.atZone(ZoneId.of("UTC-6")));
     }
 
+    //Combines arguments including and after "start" into one String
     public static String combineArgs(List<String> args, int start)
     {
         String message = "";
         for (int i = start; i < args.size(); i++)
-        {
             message += args.get(i) + " ";
-        }
+        //Removes trailing space at end
         return message.substring(0, message.length() - 1);
     }
 
+    //Easily formatted help message to be called on an incorrect command
     public static void help(Map<String, Command> map, MessageReceivedEvent event, List<String> args, String mainCommand) throws SQLException
     {
         args.add(0, mainCommand);
         map.get("help").execute(event, args);
     }
 
+    //Gets the time in the correct timezone (CST)
     public static ZonedDateTime now()
     {
         return LocalDateTime.now().atZone(ZoneId.of("UTC-6"));
     }
 
+    //Gets hex from a string
     public static Color getHex(String code)
     {
         if (code.startsWith("#"))
-        {
             code = code.substring(1);
-        }
         if (code.length() != 6)
-        {
             return null;
-        }
+
+        //Sets ints as rgb values of the color
         int one, two, three;
         one = getHexNum(code.substring(0, 2));
         two = getHexNum(code.substring(2, 4));
         three = getHexNum(code.substring(4, 6));
+        //If at least one value is invalid, return null, else return the color
         if (one < 0 || two < 0 || three < 0)
-        {
             return null;
-        }
-        return new Color(one, two, three);
+        else
+            return new Color(one, two, three);
     }
 
+    //Determines the hex value of a single number "code"
     private static int getHexNum(String code)
     {
-        String[] letters = {"A", "B", "C", "D", "E", "F"};
         int one = -1, two = -1;
+        //Try parsing the first value
         try
         {
             one = Integer.parseInt(code.substring(0, 1));
         }
+        //If it's not a number, check to see if it is a hex letter
         catch (NumberFormatException e)
         {
             for (int i = 0; i < letters.length; i++)
@@ -352,23 +323,28 @@ class BotUtils
                     break;
                 }
             }
+            //If not valid, return -1
             if (one < 0)
                 return -1;
         }
+
+        //Try parsing the second value
         try
         {
-            two = Integer.parseInt(code.substring(0, 1));
+            two = Integer.parseInt(code.substring(1, 2));
         }
+        //If it's not a number, check to see if it is a hex letter
         catch (NumberFormatException e)
         {
             for (int i = 0; i < letters.length; i++)
             {
-                if (code.substring(0, 1).equals(letters[i]))
+                if (code.substring(1, 2).equals(letters[i]))
                 {
                     two = 10 + i;
                     break;
                 }
             }
+            //If not valid, return -1
             if (two < 0)
                 return -1;
         }

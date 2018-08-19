@@ -5,15 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings({"ConstantConditions", "CodeBlock2Expr"})
 public class TwitchCommands
 {
     private String prefix;
     public TwitchCommands(Map<String, Command> map, String p)
     {
         prefix = p;
-        map.put("twitch", new Command("twitch", "Twitch integration", prefix + "twitch", AccessLevel.MOD, false, new Command[]
+        map.put("twitch", new Command("twitch", "Twitch integration", prefix + "twitch", AccessLevel.MODERATOR, false, new Command[]
                 {
-                        new Command("add", "Add a streamer to notify users when they are live. Stream link will be added automatically.", "add <twitch username> <channel> [message]", AccessLevel.MOD, false, ((event, args) ->
+                        new Command("add", "Add a streamer to notify users when they are live. Stream link will be added automatically.", "add <twitch username> <channel> [message]", AccessLevel.MODERATOR, false, ((event, args) ->
                         {
                             if (args.size() >= 3)
                             {
@@ -75,7 +76,7 @@ public class TwitchCommands
                             }
                         })),
 
-                        new Command("update_channel", "Update a live notification channel", "update <twitch username> <channel>", AccessLevel.MOD, false, ((event, args) ->
+                        new Command("update_channel", "Update a live notification channel", "update <twitch username> <channel>", AccessLevel.MODERATOR, false, ((event, args) ->
                         {
                             if (args.size() == 3)
                             {
@@ -91,9 +92,7 @@ public class TwitchCommands
                                         params.add(TwitchUtils.getTwitchClient().getChannelEndpoint().getChannel(args.get(1)).getId());
                                         ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
-                                        if (set == null)
-                                            return;
-                                        else if (set.next())
+                                        if (set.next())
                                         {
                                             sql = "UPDATE DiscordDB.TwitchLive SET ChannelID = ? WHERE GuildID = ? AND TwitchID = ?";
                                             params.add(0, c);
@@ -102,13 +101,11 @@ public class TwitchCommands
                                         else
                                         {
                                             BotUtils.sendMessage(event.getChannel(), "This twitch user does not have a notification yet! Add one with the command `" + prefix + "twitch add`");
-                                            return;
                                         }
                                     }
                                     catch (ChannelDoesNotExistException e)
                                     {
                                         BotUtils.sendMessage(event.getChannel(), "Please provide a valid channel name");
-                                        return;
                                     }
                                 }
                             }
@@ -118,7 +115,7 @@ public class TwitchCommands
                             }
                         })),
 
-                        new Command("update_message", "Update a live notification message", "update <twitch username> <message>", AccessLevel.MOD, false, ((event, args) ->
+                        new Command("update_message", "Update a live notification message", "update <twitch username> <message>", AccessLevel.MODERATOR, false, ((event, args) ->
                         {
                             if (args.size() >= 3)
                             {
@@ -130,9 +127,7 @@ public class TwitchCommands
                                     params.add(TwitchUtils.getTwitchClient().getChannelEndpoint().getChannel(args.get(1)).getId());
                                     ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
-                                    if (set == null)
-                                        return;
-                                    else if (set.next())
+                                    if (set.next())
                                     {
                                         String message = BotUtils.combineArgs(args, 2);
                                         sql = "UPDATE DiscordDB.TwitchLive SET Message = ? WHERE GuildID = ? AND TwitchID = ?";
@@ -142,13 +137,11 @@ public class TwitchCommands
                                     else
                                     {
                                         BotUtils.sendMessage(event.getChannel(), "This twitch user does not have a notification yet! Add one with the command `" + prefix + "twitch add`");
-                                        return;
                                     }
                                 }
                                 catch (ChannelDoesNotExistException e)
                                 {
                                     BotUtils.sendMessage(event.getChannel(), "Please provide a valid channel name");
-                                    return;
                                 }
                             }
                             else
@@ -157,7 +150,7 @@ public class TwitchCommands
                             }
                         })),
 
-                        new Command("remove", "Remove a live notification", "remove <twitch username>", AccessLevel.MOD, false, ((event, args) ->
+                        new Command("remove", "Remove a live notification", "remove <twitch username>", AccessLevel.MODERATOR, false, ((event, args) ->
                         {
                             if (args.size() == 2)
                             {
@@ -180,7 +173,6 @@ public class TwitchCommands
                                 catch (ChannelDoesNotExistException e)
                                 {
                                     BotUtils.sendMessage(event.getChannel(), "Please provide a valid channel name");
-                                    return;
                                 }
                             }
                             else

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+@SuppressWarnings({"WeakerAccess", "ConstantConditions"})
 public class CommandHandler
 {
     private Map<String, Command> commands;
@@ -20,7 +21,7 @@ public class CommandHandler
     private Map<String, Command> secretCommands;
     private Map<String, Command> botCommands;
 
-
+/*
     //Main constructor during publish
     public CommandHandler()
     {
@@ -46,9 +47,8 @@ public class CommandHandler
         //Commands that are only executable by bots
         new BotCommands(botCommands, BotUtils.BOT_PREFIX);
     }
+*/
 
-
-/*
     //Test constructor for specific command improvements
     public CommandHandler()
     {
@@ -57,10 +57,23 @@ public class CommandHandler
         secretCommands = new HashMap<>();
         botCommands = new HashMap<>();
 
-        new GameCommands(hiddenCommands, BotUtils.TEST_PREFIX);
-        new HelpCommands(hiddenCommands, BotUtils.TEST_PREFIX);
+        new ManagerCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+        new OwnerCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+        new AdminCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+        new ModeratorCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+        new TestCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+        new UtilityCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+        new HelpCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+        new EventCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+        new GameCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+
+        //Commands that are secret (normal command but hidden from help)
+        new SecretCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
+
+        //Commands that are only executable by bots
+        new BotCommands(hiddenCommands, BotUtils.BOT_PREFIX);
     }
-*/
+
 
     //Updates playing text when starting up
     @EventSubscriber
@@ -72,6 +85,7 @@ public class CommandHandler
         //event.getClient().changePresence(StatusType.INVISIBLE);
     }
 
+    //Checks for events to perform on a new user joining
     @EventSubscriber
     public void onUserJoin(UserJoinEvent event)
     {
@@ -84,6 +98,7 @@ public class CommandHandler
             params.add(event.getGuild().getLongID());
             ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
+            //If there are auto assigned roles, add them
             while (set.next())
             {
                 event.getUser().addRole(event.getGuild().getRoleByID(set.getLong("RoleID")));
@@ -95,7 +110,7 @@ public class CommandHandler
                         Thread.sleep(250);
                         x = false;
                     }
-                    catch (InterruptedException e)
+                    catch (InterruptedException ignored)
                     {
                     }
                 }
@@ -106,12 +121,10 @@ public class CommandHandler
         catch (Exception e)
         {
             e.printStackTrace();
-            return;
         }
     }
 
     //Sends a welcome message upon joining a new server
-
     @EventSubscriber
     public void onGuildCreate(GuildCreateEvent event)
     {
@@ -124,29 +137,26 @@ public class CommandHandler
             params.add(event.getGuild().getLongID());
             ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
+            //If the guild is not in the guild table, add it and message the owner
             if (!set.next())
             {
-                //Insert guild into table
                 sql = "INSERT INTO DiscordDB.Guilds (GuildID) VALUES (?)";
                 params.clear();
                 params.add(event.getGuild().getLongID());
                 JDBCConnection.getStatement(sql, params).executeUpdate();
 
-                //Send new guild message to guild owner
+                //Select welcome message
                 sql = "SELECT DiscordDB.EntryDescription FROM MessageEntry WHERE EntryDesc = 'Guild Join Message'";
                 params.clear();
                 set = JDBCConnection.getStatement(sql, params).executeQuery();
                 if (set.next())
-                {
                     BotUtils.sendMessage(event.getGuild().getOwner().getOrCreatePMChannel(), set.getString("EntryDescription"));
-                }
             }
             JDBCConnection.disconnect();
         }
         catch (Exception e)
         {
             e.printStackTrace();
-            return;
         }
     }
 
@@ -158,19 +168,16 @@ public class CommandHandler
         String message = event.getMessage().getContent();
         String[] args = message.split(" ");
 
+        //If empty text message, do nothing
         if (args.length == 0)
-        {
             return;
-        }
 
         //Checks to see if there is a passive command to run
         if (!(args[0].startsWith(BotUtils.DEFAULT_PREFIX) || args[0].startsWith(BotUtils.TEST_PREFIX) || args[0].startsWith(BotUtils.BOT_PREFIX)))
         {
             //Replicate DMs if mimicking is enabled
             if (event.getGuild() == null && ManagerCommands.isMimicActive() && ManagerCommands.getMimicReceive().getLongID() == event.getChannel().getLongID())
-            {
                 BotUtils.sendMessage(ManagerCommands.getMimicSend(), event.getMessage().getContent());
-            }
             return;
         }
 
@@ -197,33 +204,36 @@ public class CommandHandler
             bot = true;
         }
         else
-        {
             return;
-        }
 
         //Checks to see if there is a command with the given key
         if (map.containsKey(comStr))
         {
             if (bot && event.getAuthor().isBot() || !bot && !event.getAuthor().isBot())
             {
+                //Try executing command, and send an error message if an issue occurred
                 try
                 {
                     event.getChannel().setTypingStatus(true);
                     map.get(comStr).execute(event, argsList);
-                } catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     BotUtils.sendCommandError(event.getChannel());
                     System.out.println("\nNew " + e.getClass().getSimpleName() + " at " + BotUtils.formatDate(BotUtils.now().toInstant()) + "\n");
                     e.printStackTrace();
-                } finally
+                }
+                finally
                 {
                     event.getChannel().setTypingStatus(false);
                 }
             }
         }
+        //If command is not in main command map, check secret command map
         else if (secret && secretCommands.containsKey(comStr))
         {
             map = secretCommands;
+            //Try executing command, and send an error message if an issue occurred
             try
             {
                 event.getChannel().setTypingStatus(true);

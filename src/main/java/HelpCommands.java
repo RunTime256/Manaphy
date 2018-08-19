@@ -7,8 +7,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings({"WeakerAccess", "ConstantConditions", "StringConcatenationInLoop"})
 public class HelpCommands
 {
+    @SuppressWarnings("FieldCanBeLocal")
     private String prefix;
 
     public HelpCommands(Map<String, Command> map, String p)

@@ -1,11 +1,14 @@
 import java.util.Map;
 
+@SuppressWarnings("WeakerAccess")
 public class AdminCommands
 {
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private String prefix;
 
-    public AdminCommands(Map<String, Command> map, String p)
+    public AdminCommands(@SuppressWarnings("unused") Map<String, Command> map, String p)
     {
+        prefix = p;
         //No current commands
     }
 }

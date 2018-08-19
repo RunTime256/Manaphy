@@ -1,5 +1,6 @@
 import java.util.Map;
 
+@SuppressWarnings({"WeakerAccess", "FieldCanBeLocal", "CodeBlock2Expr"})
 public class TestCommands
 {
     private String prefix;

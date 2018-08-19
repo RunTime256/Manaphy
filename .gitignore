@@ -7,3 +7,5 @@ src/main/java/TestRunner.java
 src/main/java/Generator.java
 src/main/java/SecretCommands.java
 src/main/java/BotCommands.java
+src/main/java/TwitchCommands.java
+src/main/java/TwitchUtils.java

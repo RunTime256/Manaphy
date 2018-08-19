@@ -1,6 +1,7 @@
 import me.philippheuer.twitch4j.TwitchClient;
 import me.philippheuer.twitch4j.TwitchClientBuilder;
 
+@SuppressWarnings("WeakerAccess")
 public class TwitchUtils
 {
     private static TwitchClient cli;

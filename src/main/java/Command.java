@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings({"WeakerAccess", "ConstantConditions"})
 public class Command
 {
     private String name;
@@ -16,17 +17,6 @@ public class Command
     private AccessLevel access;
     private Map<String, Command> subComms;
     private CommandExecutor execute;
-
-    //Useful Strings for commands
-    public static final String MANAGER = "Manager";
-    public static final String TESTER = "Tester";
-    public static final String OWNER = "Owner";
-    public static final String ADMIN = "Admin";
-    public static final String MOD = "Mod";
-    public static final String HELP = "Help";
-    public static final String TEST = "Test";
-    public static final String UTILITY = "Utility";
-    public static final String EVENT = "Event";
 
     //Create a standard command
     public Command(String n, String d, String x, AccessLevel a, boolean m, CommandExecutor e)
@@ -49,10 +39,8 @@ public class Command
         access = a;
         subComms = new HashMap<>();
         //Add sub-commands to a map
-        for (int i = 0; i < s.length; i++)
-        {
-            subComms.put(s[i].getName(), s[i]);
-        }
+        for (Command value : s)
+            subComms.put(value.getName(), value);
         execute = e;
         dm = m;
     }
@@ -194,6 +182,7 @@ public class Command
     }
 
     //Checks if the bot has permission to use the command in the current channel
+    @SuppressWarnings("unused")
     public static boolean hasChannelPerms(MessageReceivedEvent event, String type, String comName) throws SQLException
     {
         //If it's in a DM, it has permission
