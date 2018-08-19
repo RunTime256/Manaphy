@@ -162,7 +162,7 @@ public class GameCommands
                                 else
                                 {
                                     BotUtils.sendMessage(event.getChannel(), "This command could not be run at the time.");
-                                    //return;
+                                    return;
                                 }
 
                                 //Find if there exists an active game, otherwise get stats from it
