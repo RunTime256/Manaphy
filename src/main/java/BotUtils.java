@@ -317,7 +317,7 @@ class BotUtils
         {
             for (int i = 0; i < letters.length; i++)
             {
-                if (code.substring(0, 1).equals(letters[i]))
+                if (code.substring(0, 1).toUpperCase().equals(letters[i]))
                 {
                     one = 10 + i;
                     break;
@@ -338,7 +338,7 @@ class BotUtils
         {
             for (int i = 0; i < letters.length; i++)
             {
-                if (code.substring(1, 2).equals(letters[i]))
+                if (code.substring(1, 2).toUpperCase().equals(letters[i]))
                 {
                     two = 10 + i;
                     break;

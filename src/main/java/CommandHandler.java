@@ -56,22 +56,6 @@ public class CommandHandler
         hiddenCommands = new HashMap<>();
         secretCommands = new HashMap<>();
         botCommands = new HashMap<>();
-
-        new ManagerCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-        new OwnerCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-        new AdminCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-        new ModeratorCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-        new TestCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-        new UtilityCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-        new HelpCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-        new EventCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-        new GameCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-
-        //Commands that are secret (normal command but hidden from help)
-        new SecretCommands(hiddenCommands, BotUtils.DEFAULT_PREFIX);
-
-        //Commands that are only executable by bots
-        new BotCommands(hiddenCommands, BotUtils.BOT_PREFIX);
     }
 */
 

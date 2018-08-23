@@ -691,6 +691,7 @@ public class GameCommands
                                             builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #22");
                                             builder.appendField("User ID", "" +  author.getLongID(), false);
                                             builder.appendField("Streak Number", "2", false);
+                                            builder.withColor(GREEN);
 
                                             BotUtils.sendMessage(event.getClient().getChannelByID(channel), builder.build());
                                         }
@@ -725,6 +726,7 @@ public class GameCommands
                                             builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #22");
                                             builder.appendField("User ID", "" +  author.getLongID(), false);
                                             builder.appendField("Streak Number", "4", false);
+                                            builder.withColor(GREEN);
 
                                             BotUtils.sendMessage(event.getClient().getChannelByID(channel), builder.build());
                                         }
@@ -759,6 +761,7 @@ public class GameCommands
                                             builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #22");
                                             builder.appendField("User ID", "" +  author.getLongID(), false);
                                             builder.appendField("Streak Number", "7", false);
+                                            builder.withColor(GREEN);
 
                                             BotUtils.sendMessage(event.getClient().getChannelByID(channel), builder.build());
                                         }
@@ -801,6 +804,7 @@ public class GameCommands
                                                 builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #29");
                                                 builder.appendField("User ID", "" + author.getLongID(), false);
                                                 builder.appendField("Streak Number", "9", false);
+                                                builder.withColor(GREEN);
 
                                                 BotUtils.sendMessage(event.getClient().getChannelByID(channel), builder.build());
                                             }
@@ -838,6 +842,7 @@ public class GameCommands
                                                 builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #29");
                                                 builder.appendField("User ID", "" + author.getLongID(), false);
                                                 builder.appendField("Streak Number", "11", false);
+                                                builder.withColor(GREEN);
 
                                                 BotUtils.sendMessage(event.getClient().getChannelByID(channel), builder.build());
                                             }
@@ -868,8 +873,9 @@ public class GameCommands
                                             IUser author = event.getAuthor();
                                             builder.withAuthorIcon(author.getAvatarURL());
                                             builder.withAuthorName(author.getName());
-                                            builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #29 (Empoleon)");
+                                            builder.withTitle(author.getName() + "#" + author.getDiscriminator() + " received intel drop #29");
                                             builder.appendField("User ID", "" + author.getLongID(), false);
+                                            builder.withColor(BLUE);
 
                                             BotUtils.sendMessage(event.getClient().getChannelByID(channel), builder.build());
                                         }
