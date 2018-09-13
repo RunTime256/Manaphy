@@ -5,7 +5,9 @@ import sx.blah.discord.handle.obj.*;
 import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.PermissionUtils;
 
+import java.io.ObjectInputStream;
 import java.sql.ResultSet;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -102,29 +104,52 @@ public class UtilityCommands
         map.put("role", new Command("role", "Add or remove a role", prefix + "role", AccessLevel.EVERYONE, false, new Command[]
                 {
                         //Create a new selectable or auto role, or alter one
-                        new Command("set", "Sets a selectable/auto-assigned role to be added with a code. Code cannot have spaces. Add `auto` argument to have the role added upon join.", "set [auto] <role id> <role code>", AccessLevel.MODERATOR, false, ((event, args) ->
+                        new Command("set", "Sets a selectable/auto-assigned role to be added with a code. Code cannot have spaces. Add `auto` argument to have the role added upon join, or DM if for the r/Pokemon server. Add reg if the role requires the Regular role.", "set [auto/dm] [reg] <role id> <role code>", AccessLevel.MODERATOR, false, ((event, args) ->
                         {
                             //If in DMs or invalid arguments, do nothing
                             if (event.getGuild() == null)
                             {
                                 return;
                             }
-                            if (args.size() < 3 || args.size() > 4)
+                            if (args.size() < 3 || args.size() > 5)
                             {
                                 BotUtils.help(map, event, args, "role");
                                 return;
                             }
 
-                            //Checks if auto argument is included
-                            boolean auto = false;
+                            int pos = 1;
+                            //Checks if auto or dm argument is included. Increases pos for rest of arguments
+                            boolean auto = false, dm = false, reg = false;
                             if (args.size() == 4 && args.get(1).equals("auto"))
                             {
-                                args.remove(1);
+                                pos++;
                                 auto = true;
+                            }
+                            else if (args.get(1).equals("dm"))
+                            {
+                                long pokemon = -1;
+                                String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon'";
+                                List<Object> params = new ArrayList<>();
+                                ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                if (set.next())
+                                {
+                                    pokemon = set.getLong("Entry");
+                                }
+
+                                if (event.getGuild().getLongID() == pokemon && args.size() == 4 || args.size() == 5)
+                                {
+                                    if (args.size() == 5 && args.get(2).equals("reg"))
+                                    {
+                                        pos++;
+                                        reg = true;
+                                    }
+                                    pos++;
+                                    dm = true;
+                                }
                             }
 
                             //Get id from arguments
-                            long id = BotUtils.getID(args.get(1));
+                            long id = BotUtils.getID(args.get(pos));
                             IRole role = event.getGuild().getRoleByID(id);
                             //If invalid id/role, send error message
                             if (role == null)
@@ -145,7 +170,7 @@ public class UtilityCommands
                             String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ?";
                             List<Object> params = new ArrayList<>();
                             params.add(event.getGuild().getLongID());
-                            params.add(args.get(2));
+                            params.add(args.get(pos + 1));
                             ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
                             //If there exists a role with this code already, do not add it
                             if (set.next())
@@ -165,24 +190,31 @@ public class UtilityCommands
                             {
                                 if (auto)
                                 {
-                                    BotUtils.sendMessage(event.getChannel(), "You cannot set a requestable role as automatic.");
+                                    BotUtils.sendMessage(event.getChannel(), "You cannot update a requestable role as automatic.");
+                                    return;
+                                }
+                                if (dm)
+                                {
+                                    BotUtils.sendMessage(event.getChannel(), "You cannot update a requestable role as dm.");
                                     return;
                                 }
                                 sql = "UPDATE DiscordDB.Roles SET Code = ? WHERE GuildID = ? AND RoleID = ?";
-                                params.add(0, args.get(2));
+                                params.add(0, args.get(pos + 1));
                                 JDBCConnection.getStatement(sql, params).executeUpdate();
                             }
                             else
                             {
-                                sql = "INSERT INTO DiscordDB.Roles (GuildID, RoleID, Code, Auto) VALUES (?, ?, ?, ?)";
-                                params.add(args.get(2));
+                                sql = "INSERT INTO DiscordDB.Roles (GuildID, RoleID, Code, Auto, DM, Reg) VALUES (?, ?, ?, ?, ?, ?)";
+                                params.add(args.get(pos + 1));
                                 params.add(auto);
+                                params.add(dm);
+                                params.add(reg);
                                 JDBCConnection.getStatement(sql, params).executeUpdate();
                             }
-                            BotUtils.sendMessage(event.getChannel(), role.getName() + " was updated with code " + args.get(2));
+                            BotUtils.sendMessage(event.getChannel(), role.getName() + " was updated with code " + args.get(pos + 1));
                         })),
 
-                        new Command("delete", "Deletes a selectable/auto-assigned role, no longer making it available", "delete <role code>", AccessLevel.MODERATOR, false, ((event, args) ->
+                        new Command("delete", "Deletes a selectable/auto-assigned/dm role, no longer making it available", "delete <role code>", AccessLevel.MODERATOR, false, ((event, args) ->
                         {
                             //If in DMs or invalid arguments, do nothing
                             if (event.getGuild() == null)
@@ -207,19 +239,107 @@ public class UtilityCommands
                         //Add a selectable role
                         new Command("add", "Adds a role", "add <role>", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
-                            //If in DMs or invalid arguments, do nothing
-                            if (event.getGuild() == null)
-                            {
-                                return;
-                            }
                             if (args.size() != 2)
                             {
                                 BotUtils.help(map, event, args, "role");
                                 return;
                             }
 
+                            //If in DMs or invalid arguments, do nothing
+                            if (event.getGuild() == null)
+                            {
+                                long pokemon = -1;
+                                String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon'";
+                                List<Object> params = new ArrayList<>();
+                                ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                if (set.next())
+                                {
+                                    pokemon = set.getLong("Entry");
+                                }
+
+                                IGuild guild = event.getClient().getGuildByID(pokemon);
+
+                                if (guild.getUserByID(event.getAuthor().getLongID()) != null)
+                                {
+                                    sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon Verified Role'";
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                    if (set.next())
+                                    {
+                                        long verified = set.getLong("Entry");
+                                        if (!guild.getUserByID(event.getAuthor().getLongID()).hasRole(guild.getRoleByID(verified)))
+                                        {
+                                            BotUtils.sendMessage(event.getChannel(), "Please enter a valid role.");
+                                            return;
+                                        }
+                                    }
+                                    else
+                                        return;
+
+                                    sql = "SELECT RoleID, Reg FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ? AND DM is true";
+                                    params.add(guild.getLongID());
+                                    params.add(args.get(1));
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                    if (!set.next())
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "Please enter a valid role.");
+                                        return;
+                                    }
+
+                                    boolean reg = set.getBoolean("Reg");
+                                    IRole role = guild.getRoleByID(set.getLong("RoleID"));
+
+                                    if (reg)
+                                    {
+                                        sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon Regular Role'";
+                                        params.clear();
+                                        set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                        if (set.next())
+                                        {
+                                            long regular = set.getLong("Entry");
+                                            if (!guild.getUserByID(event.getAuthor().getLongID()).hasRole(guild.getRoleByID(regular)))
+                                            {
+                                                BotUtils.sendMessage(event.getChannel(), "Please enter a valid role.");
+                                                return;
+                                            }
+                                        }
+                                        else
+                                            return;
+                                    }
+
+                                    if (role == null)
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "This role does not exist.");
+                                        return;
+                                    }
+
+                                    sql = "SELECT * FROM DiscordDB.RoleBlacklist WHERE UserID = ? AND RoleID = ? AND (Permanent = TRUE OR EndTime > ?)";
+                                    params.clear();
+                                    params.add(event.getAuthor().getLongID());
+                                    params.add(role.getLongID());
+                                    params.add(BotUtils.now());
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                    if (set.next())
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "This role is not available.");
+                                        return;
+                                    }
+
+                                    //Check if user has role
+                                    if (event.getAuthor().hasRole(role))
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "You already have this role.");
+                                        return;
+                                    }
+
+                                    guild.getUserByID(event.getAuthor().getLongID()).addRole(role);
+                                    BotUtils.sendMessage(event.getChannel(), role.getName() + " was added!");
+                                }
+
+                                return;
+                            }
+
                             //Select role to assign
-                            String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ? AND Auto is false";
+                            String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ? AND Auto is false AND DM is false";
                             List<Object> params = new ArrayList<>();
                             params.add(event.getGuild().getLongID());
                             params.add(args.get(1));
@@ -268,19 +388,61 @@ public class UtilityCommands
 
                         new Command("remove", "Removes a role", "remove <role>", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
-                            //If in DMs or invalid arguments, do nothing
-                            if (event.getGuild() == null)
-                            {
-                                return;
-                            }
                             if (args.size() != 2)
                             {
                                 BotUtils.help(map, event, args, "role");
                                 return;
                             }
+                            //If in DMs or invalid arguments, do nothing
+                            if (event.getGuild() == null)
+                            {
+                                long pokemon = -1;
+                                String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon'";
+                                List<Object> params = new ArrayList<>();
+                                ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                if (set.next())
+                                {
+                                    pokemon = set.getLong("Entry");
+                                }
+
+                                IGuild guild = event.getClient().getGuildByID(pokemon);
+
+                                if (guild.getUserByID(event.getAuthor().getLongID()) != null)
+                                {
+
+                                    sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ? AND DM is true";
+                                    params.add(guild.getLongID());
+                                    params.add(args.get(1));
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                    if (!set.next())
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "Please enter a valid role.");
+                                        return;
+                                    }
+
+                                    IRole role = guild.getRoleByID(set.getLong("RoleID"));
+
+                                    if (role == null)
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "This role does not exist.");
+                                        return;
+                                    }
+                                    //Check if user has role
+                                    if (!event.getAuthor().hasRole(role))
+                                    {
+                                        BotUtils.sendMessage(event.getChannel(), "You do not have this role.");
+                                        return;
+                                    }
+
+                                    event.getAuthor().removeRole(role);
+                                    BotUtils.sendMessage(event.getChannel(), role.getName() + " was removed!");
+                                }
+
+                                return;
+                            }
 
                             //Select role to remove
-                            String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ? AND Auto is false";
+                            String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ? AND Auto is false AND DM is false";
                             List<Object> params = new ArrayList<>();
                             params.add(event.getGuild().getLongID());
                             params.add(args.get(1));
@@ -313,9 +475,51 @@ public class UtilityCommands
                         new Command("list", "List requestable roles", "list", AccessLevel.EVERYONE, false, ((event, args) ->
                         {
                             //If in DMs or invalid arguments, do nothing
-                            if (event.getGuild() == null)
+                            IGuild guild = event.getGuild();
+                            boolean hasVerified = false;
+                            boolean hasReg = false;
+                            if (guild == null)
                             {
-                                return;
+                                if (!BotUtils.isPokemon(event))
+                                    return;
+                                long pokemon = -1;
+                                String sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon'";
+                                List<Object> params = new ArrayList<>();
+                                ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                if (set.next())
+                                {
+                                    pokemon = set.getLong("Entry");
+                                }
+
+                                guild = event.getClient().getGuildByID(pokemon);
+
+                                if (guild.getUserByID(event.getAuthor().getLongID()) != null)
+                                {
+                                    sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon Verified Role'";
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                    if (set.next())
+                                    {
+                                        long verified = set.getLong("Entry");
+                                        if (guild.getUserByID(event.getAuthor().getLongID()).hasRole(guild.getRoleByID(verified)))
+                                        {
+                                            hasVerified = true;
+                                        }
+                                    }
+                                    else
+                                        return;
+
+                                    sql = "SELECT Entry FROM DiscordDB.Utils WHERE EntryDesc = 'Pokemon Regular Role'";
+                                    params.clear();
+                                    set = JDBCConnection.getStatement(sql, params).executeQuery();
+                                    if (set.next())
+                                    {
+                                        long regular = set.getLong("Entry");
+                                        if (guild.getUserByID(event.getAuthor().getLongID()).hasRole(guild.getRoleByID(regular)))
+                                            hasReg = true;
+                                    }
+                                    else
+                                        return;
+                                }
                             }
                             if (args.size() != 1)
                             {
@@ -323,9 +527,9 @@ public class UtilityCommands
                                 return;
                             }
 
-                            String sql = "SELECT RoleID, Code, Auto FROM DiscordDB.Roles WHERE GuildID = ?";
+                            String sql = "SELECT RoleID, Code, Auto, DM, Reg FROM DiscordDB.Roles WHERE GuildID = ?";
                             List<Object> params = new ArrayList<>();
-                            params.add(event.getGuild().getLongID());
+                            params.add(guild.getLongID());
                             ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
 
                             EmbedBuilder builder = new EmbedBuilder();
@@ -335,18 +539,40 @@ public class UtilityCommands
                                 set.previous();
                                 while (set.next())
                                 {
-                                    IRole role = event.getGuild().getRoleByID(set.getLong("RoleID"));
+                                    IRole role = guild.getRoleByID(set.getLong("RoleID"));
+
+                                    sql = "SELECT * FROM DiscordDB.RoleBlacklist WHERE UserID = ? AND RoleID = ? AND (Permanent = TRUE OR EndTime > ?)";
+                                    params.clear();
+                                    params.add(event.getAuthor().getLongID());
+                                    params.add(role.getLongID());
+                                    params.add(BotUtils.now());
+                                    ResultSet banSet = JDBCConnection.getStatement(sql, params).executeQuery();
+
+                                    if (banSet.next())
+                                        continue;
+
                                     boolean auto = set.getBoolean("Auto");
+                                    boolean reg = set.getBoolean("Reg");
+                                    boolean dm = set.getBoolean("DM");
                                     String title = set.getString("Code");
                                     if (auto)
                                         title = "[auto] " + title;
+                                    if (dm)
+                                        title = "[dm] " + title;
+                                    if (reg)
+                                        title = "[reg] " + title;
                                     if (role == null)
                                     {
                                         builder.appendField(title, "Invalid Role", true);
                                     }
+
                                     else
                                     {
-                                        builder.appendField(title, role.mention(),true);
+                                        if (!dm || (dm && hasVerified && (!reg || hasReg && reg)))
+                                            if (event.getGuild() != null)
+                                                builder.appendField(title, role.mention(),true);
+                                            else
+                                                builder.appendField(title, "@" + role.getName(),true);
                                     }
                                 }
                             }
@@ -355,7 +581,105 @@ public class UtilityCommands
                                 builder.withDescription("No available requestable roles");
                             }
                             BotUtils.sendMessage(event.getChannel(), builder.build());
-                        }))
+                        })),
+
+                        new Command("ban", "Blacklists a user from adding a role for a set time in days or -1 for perma", "ban <user> <code> <time>", AccessLevel.MODERATOR, false, ((event, args) ->
+                        {
+                            if (args.size() != 4)
+                            {
+                                BotUtils.help(map, event, args, "role");
+                                return;
+                            }
+
+                            long id = BotUtils.getID(args.get(1));
+                            if (id < 0)
+                                BotUtils.help(map, event, args, "role");
+                            String code = args.get(2);
+                            boolean perma = false;
+                            ZonedDateTime time;
+                            int days;
+                            try
+                            {
+                                days = Integer.parseInt(args.get(3));
+                                time = BotUtils.now().plusDays(days);
+                                if (days <= 0)
+                                    perma = true;
+                            }
+                            catch (NumberFormatException e)
+                            {
+                                BotUtils.sendMessage(event.getChannel(), "Please provide a valid time");
+                                return;
+                            }
+
+                            String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ?";
+                            List<Object> params = new ArrayList<>();
+                            params.add(event.getGuild().getLongID());
+                            params.add(code);
+                            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+
+                            if (!set.next())
+                                return;
+
+                            long roleID = set.getLong("RoleID");
+                            if (event.getGuild().getRoleByID(roleID) == null)
+                            {
+                                BotUtils.sendMessage(event.getChannel(), "This role does not exist.");
+                                return;
+                            }
+
+                            sql = "INSERT INTO DiscordDB.RoleBlacklist (UserID, RoleID, EndTime, Permanent) VALUES (?, ?, ?, ?)";
+                            params.clear();
+                            params.add(id);
+                            params.add(roleID);
+                            params.add(time);
+                            params.add(perma);
+                            JDBCConnection.getStatement(sql, params).executeUpdate();
+
+                            event.getGuild().getUserByID(id).removeRole(event.getGuild().getRoleByID(roleID));
+
+                            String end;
+                            if (perma)
+                                end = " permanently.";
+                            else
+                                end = " for " + days + " days.";
+                            BotUtils.sendMessage(event.getChannel(), "User successfully blacklisted for " + event.getGuild().getRoleByID(roleID).getName() + end);
+                        })),
+
+                        new Command("unban", "Un-blacklists a user from adding a role", "unban <user> <code>", AccessLevel.MODERATOR, false, ((event, args) ->
+                        {
+                            if (args.size() != 3)
+                            {
+                                BotUtils.help(map, event, args, "role");
+                                return;
+                            }
+
+                            long id = BotUtils.getID(args.get(1));
+                            String code = args.get(2);
+
+                            String sql = "SELECT RoleID FROM DiscordDB.Roles WHERE GuildID = ? AND Code = ?";
+                            List<Object> params = new ArrayList<>();
+                            params.add(event.getGuild().getLongID());
+                            params.add(code);
+                            ResultSet set = JDBCConnection.getStatement(sql, params).executeQuery();
+
+                            if (!set.next())
+                                return;
+
+                            long roleID = set.getLong("RoleID");
+                            if (event.getGuild().getRoleByID(roleID) == null)
+                            {
+                                BotUtils.sendMessage(event.getChannel(), "This role does not exist.");
+                                return;
+                            }
+
+                            sql = "DELETE FROM DiscordDB.RoleBlacklist WHERE UserID = ? AND RoleID = ?";
+                            params.clear();
+                            params.add(id);
+                            params.add(roleID);
+                            JDBCConnection.getStatement(sql, params).executeUpdate();
+
+                            BotUtils.sendMessage(event.getChannel(), "User successfully removed from the blacklist for " + event.getGuild().getRoleByID(roleID).getName());
+                        })),
                 },
 
                 (event, args) ->

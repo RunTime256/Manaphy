@@ -17,7 +17,7 @@ import java.util.Arrays;
 public class CommandHandler
 {
     private Map<String, Command> commands;
-    private Map<String, Command> hiddenCommands;
+    private Map<String, Command> testCommands;
     private Map<String, Command> secretCommands;
     private Map<String, Command> botCommands;
 
@@ -26,7 +26,7 @@ public class CommandHandler
     public CommandHandler()
     {
         commands = new HashMap<>();
-        hiddenCommands = new HashMap<>();
+        testCommands = new HashMap<>();
         secretCommands = new HashMap<>();
         botCommands = new HashMap<>();
 
@@ -53,7 +53,7 @@ public class CommandHandler
     public CommandHandler()
     {
         commands = new HashMap<>();
-        hiddenCommands = new HashMap<>();
+        testCommands = new HashMap<>();
         secretCommands = new HashMap<>();
         botCommands = new HashMap<>();
     }
@@ -180,7 +180,7 @@ public class CommandHandler
         }
         else if (args[0].startsWith(BotUtils.TEST_PREFIX))
         {
-            map = hiddenCommands;
+            map = testCommands;
         }
         else if (args[0].startsWith(BotUtils.BOT_PREFIX))
         {
